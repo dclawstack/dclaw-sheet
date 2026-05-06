@@ -1,0 +1,32 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/dclawstack/dclaw-sheet
+  pullPolicy: IfNotPresent
+  tag: ""
+
+service:
+  type: ClusterIP
+  port: 8108
+
+ingress:
+  enabled: true
+  className: nginx
+  host: sheet.dclawstack.io
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+postgresql:
+  enabled: true
+  storage: 10Gi
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
