@@ -1,24 +1,33 @@
-export interface Spreadsheet {
-  id: string;
-  name: string;
-  row_count: number;
-  column_count: number;
-  summary: string;
-  status: string;
-  created_at: string;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+
+class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
 }
 
-export async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `/api/v1${path}`;
-  const res = await fetch(url, {
-    ...options,
+async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
+  const url = `${API_BASE}${path}`;
+  const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
-      ...(options?.headers || {}),
+      ...options?.headers,
     },
+    ...options,
   });
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  if (!response.ok) {
+    const error = await response.text();
+    throw new ApiError(`API error ${response.status}: ${error}`, response.status);
   }
-  return res.json() as Promise<T>;
+  return response.json();
 }
+
+export async function getHealth() {
+  return fetchJson<{ status: string }>("/health/");
+}
+
+// TODO: Add app-specific API functions here
+
+export { ApiError };

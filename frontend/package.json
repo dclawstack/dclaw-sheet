@@ -1,30 +1,30 @@
 {
-  "name": "dclaw-sheet-frontend",
-  "version": "0.1.0",
+  "name": "dclaw-app-frontend",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3022",
+    "dev": "next dev --port 3022",
     "build": "next build",
-    "start": "next start -p 3022"
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.2.28",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "lucide-react": "^0.460.0",
+    "autoprefixer": "^10.4.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.4",
-    "class-variance-authority": "^0.7.0",
-    "tailwindcss-animate": "^1.0.7",
-    "@radix-ui/react-slot": "^1.1.0"
+    "lucide-react": "^0.400.0",
+    "next": "^14.2.0",
+    "postcss": "^8.4.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "tailwind-merge": "^2.6.1",
+    "tailwindcss": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "typescript": "^5",
-    "tailwindcss": "^3.4.1",
-    "postcss": "^8",
-    "autoprefixer": "^10.4.20"
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5.4.0"
   }
 }
