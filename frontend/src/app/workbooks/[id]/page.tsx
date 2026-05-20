@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -35,11 +35,11 @@ import { CopilotPanel } from "@/components/copilot-panel";
 import { SqlPanel } from "@/components/sql-panel";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default function WorkbookPage({ params }: PageProps) {
-  const { id } = use(params);
+  const { id } = params;
   const [workbook, setWorkbook] = useState<Workbook | null>(null);
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
