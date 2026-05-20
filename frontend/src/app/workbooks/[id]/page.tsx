@@ -2,15 +2,30 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, Plus, BarChart3, Download, Bot, Database } from "lucide-react";
+import {
+  ArrowLeft,
+  Upload,
+  Plus,
+  BarChart3,
+  Download,
+  Bot,
+  Database,
+  RefreshCw,
+  Zap,
+} from "lucide-react";
 
 import {
   createSheet,
   getWorkbook,
   importCsv,
   importXlsx,
+  listConnections,
   listSheets,
+  refreshLinkedSheet,
   sheetExportUrl,
+  syncConnectionIntoWorkbook,
+  type Connection,
+  type DriftReport,
   type Sheet,
   type Workbook,
 } from "@/lib/api";
@@ -103,6 +118,47 @@ export default function WorkbookPage({ params }: PageProps) {
   const [showSql, setShowSql] = useState(false);
   const [chartRange, setChartRange] = useState<{ start: string; end: string } | undefined>(undefined);
   const [gridRefreshTick, setGridRefreshTick] = useState(0);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [drift, setDrift] = useState<DriftReport | null>(null);
+
+  useEffect(() => {
+    listConnections().then(setConnections).catch(() => undefined);
+  }, []);
+
+  async function handleSyncConnection(connectionId: string) {
+    setBusy(true);
+    setError(null);
+    setDrift(null);
+    try {
+      const result = await syncConnectionIntoWorkbook(connectionId, id);
+      const fresh = await listSheets(id);
+      setSheets(fresh);
+      setActiveSheetId(result.sheet.id);
+      setDrift(result.drift);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRefreshLinkedSheet() {
+    if (!activeSheetId) return;
+    setBusy(true);
+    setError(null);
+    setDrift(null);
+    try {
+      const result = await refreshLinkedSheet(activeSheetId);
+      const fresh = await listSheets(id);
+      setSheets(fresh);
+      setDrift(result.drift);
+      setGridRefreshTick((v) => v + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Refresh failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const activeSheet = sheets.find((s) => s.id === activeSheetId) ?? null;
 
@@ -121,6 +177,22 @@ export default function WorkbookPage({ params }: PageProps) {
         {error && (
           <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-800">
             {error}
+          </div>
+        )}
+
+        {drift && drift.has_drift && !drift.is_first_sync && (
+          <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 flex items-start gap-2">
+            <Zap className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <div className="font-semibold mb-1">Schema drift detected</div>
+              {drift.added.length > 0 && (
+                <div>Added: <code className="bg-amber-100 px-1 rounded">{drift.added.join(", ")}</code></div>
+              )}
+              {drift.removed.length > 0 && (
+                <div>Removed: <code className="bg-amber-100 px-1 rounded">{drift.removed.join(", ")}</code></div>
+              )}
+              {drift.reordered && <div>Columns reordered.</div>}
+            </div>
           </div>
         )}
 
@@ -182,6 +254,43 @@ export default function WorkbookPage({ params }: PageProps) {
               <Download className="h-4 w-4" />
               Download XLSX
             </a>
+          )}
+
+          {connections.length > 0 && (
+            <div className="relative">
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleSyncConnection(e.target.value);
+                    e.target.value = "";
+                  }
+                }}
+                disabled={busy}
+                className="rounded-md bg-white border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Sync from…
+                </option>
+                {connections.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.type})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {activeSheet?.source_connection_id && (
+            <button
+              onClick={handleRefreshLinkedSheet}
+              disabled={busy}
+              className="rounded-md bg-white border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+              title="Re-fetch the linked connection"
+            >
+              <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
           )}
 
           {activeSheetId && (

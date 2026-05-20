@@ -47,6 +47,7 @@ export interface Sheet {
   position: number;
   row_count: number;
   column_count: number;
+  source_connection_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -178,6 +179,71 @@ export async function copilotAsk(sheetId: string, prompt: string) {
   return fetchJson<CopilotResponse>(`/api/v1/ai/sheets/${sheetId}/copilot`, {
     method: "POST",
     body: JSON.stringify({ prompt }),
+  });
+}
+
+export type ConnectionType = "postgres" | "csv_url";
+
+export interface Connection {
+  id: string;
+  name: string;
+  type: ConnectionType;
+  last_synced_at: string | null;
+  last_row_count: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConnectionWithConfig extends Connection {
+  config: Record<string, unknown>;
+}
+
+export interface DriftReport {
+  added: string[];
+  removed: string[];
+  reordered: boolean;
+  is_first_sync: boolean;
+  has_drift: boolean;
+}
+
+export interface SyncResult {
+  sheet: Sheet;
+  drift: DriftReport;
+}
+
+export async function listConnections() {
+  return fetchJson<Connection[]>("/api/v1/connections");
+}
+
+export async function createConnection(payload: {
+  name: string;
+  type: ConnectionType;
+  config: Record<string, unknown>;
+}) {
+  return fetchJson<Connection>("/api/v1/connections", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getConnection(id: string) {
+  return fetchJson<ConnectionWithConfig>(`/api/v1/connections/${id}`);
+}
+
+export async function deleteConnection(id: string) {
+  return fetchJson<void>(`/api/v1/connections/${id}`, { method: "DELETE" });
+}
+
+export async function syncConnectionIntoWorkbook(connectionId: string, workbookId: string) {
+  return fetchJson<SyncResult>(
+    `/api/v1/connections/${connectionId}/sync/${workbookId}`,
+    { method: "POST" },
+  );
+}
+
+export async function refreshLinkedSheet(sheetId: string) {
+  return fetchJson<SyncResult>(`/api/v1/connections/refresh/sheets/${sheetId}`, {
+    method: "POST",
   });
 }
 

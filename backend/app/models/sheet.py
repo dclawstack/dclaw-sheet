@@ -21,6 +21,12 @@ class Sheet(Base):
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
     column_count: Mapped[int] = mapped_column(Integer, nullable=False, default=26)
+    source_connection_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("connections.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

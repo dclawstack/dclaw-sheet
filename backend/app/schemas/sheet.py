@@ -26,5 +26,6 @@ class SheetRead(BaseModel):
     position: int
     row_count: int
     column_count: int
+    source_connection_id: UUID | None = None
     created_at: datetime
     updated_at: datetime

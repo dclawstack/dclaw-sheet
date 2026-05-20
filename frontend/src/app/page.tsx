@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Table2, Plus, Trash2 } from "lucide-react";
+import { Table2, Plus, Trash2, Database } from "lucide-react";
 
 import {
   createWorkbook,
@@ -71,13 +71,22 @@ export default function Home() {
           <Table2 className="h-6 w-6 text-white" />
           <h1 className="text-xl font-semibold text-white">DClaw Sheet</h1>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="rounded-md bg-white/10 hover:bg-white/20 px-4 py-2 text-sm text-white font-medium flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          New workbook
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/connections"
+            className="rounded-md bg-white/10 hover:bg-white/20 px-4 py-2 text-sm text-white font-medium flex items-center gap-2"
+          >
+            <Database className="h-4 w-4" />
+            Connections
+          </Link>
+          <button
+            onClick={() => setShowModal(true)}
+            className="rounded-md bg-white/10 hover:bg-white/20 px-4 py-2 text-sm text-white font-medium flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New workbook
+          </button>
+        </div>
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-8">
