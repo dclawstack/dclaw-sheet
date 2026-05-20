@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, Plus, BarChart3, Download } from "lucide-react";
+import { ArrowLeft, Upload, Plus, BarChart3, Download, Bot } from "lucide-react";
 
 import {
   createSheet,
@@ -16,6 +16,7 @@ import {
 } from "@/lib/api";
 import { SheetGrid } from "@/components/sheet-grid";
 import { ChartPanel } from "@/components/chart-panel";
+import { CopilotPanel } from "@/components/copilot-panel";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -97,6 +98,9 @@ export default function WorkbookPage({ params }: PageProps) {
   }
 
   const [showChart, setShowChart] = useState(false);
+  const [showCopilot, setShowCopilot] = useState(false);
+  const [chartRange, setChartRange] = useState<{ start: string; end: string } | undefined>(undefined);
+  const [gridRefreshTick, setGridRefreshTick] = useState(0);
 
   const activeSheet = sheets.find((s) => s.id === activeSheetId) ?? null;
 
@@ -191,19 +195,54 @@ export default function WorkbookPage({ params }: PageProps) {
               {showChart ? "Hide chart" : "Auto chart"}
             </button>
           )}
+
+          {activeSheetId && (
+            <button
+              onClick={() => setShowCopilot((v) => !v)}
+              className={`rounded-md px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+                showCopilot
+                  ? "bg-[#10B981] text-white hover:bg-[#0E9F6E]"
+                  : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Bot className="h-4 w-4" />
+              {showCopilot ? "Hide copilot" : "Copilot"}
+            </button>
+          )}
         </div>
 
         {activeSheet ? (
-          <div className={showChart ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
+          <div
+            className={
+              showChart || showCopilot ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""
+            }
+          >
             <SheetGrid
-              key={activeSheet.id}
+              key={`${activeSheet.id}-${gridRefreshTick}`}
               sheetId={activeSheet.id}
               rowCount={activeSheet.row_count}
               columnCount={activeSheet.column_count}
             />
-            {showChart && (
-              <ChartPanel sheetId={activeSheet.id} onClose={() => setShowChart(false)} />
-            )}
+            <div className="space-y-4">
+              {showChart && (
+                <ChartPanel
+                  sheetId={activeSheet.id}
+                  defaultRange={chartRange}
+                  onClose={() => setShowChart(false)}
+                />
+              )}
+              {showCopilot && (
+                <CopilotPanel
+                  sheetId={activeSheet.id}
+                  onClose={() => setShowCopilot(false)}
+                  onMutated={() => setGridRefreshTick((v) => v + 1)}
+                  onChartRequest={(range) => {
+                    setChartRange(range);
+                    setShowChart(true);
+                  }}
+                />
+              )}
+            </div>
           </div>
         ) : (
           <div className="rounded-lg bg-white p-12 shadow-sm border border-gray-200 text-center text-gray-500">

@@ -163,4 +163,22 @@ export async function recommendChart(
   );
 }
 
+export interface CopilotToolCall {
+  tool: string;
+  [key: string]: unknown;
+}
+
+export interface CopilotResponse {
+  provider: string;
+  message: string;
+  tool_calls: CopilotToolCall[];
+}
+
+export async function copilotAsk(sheetId: string, prompt: string) {
+  return fetchJson<CopilotResponse>(`/api/v1/ai/sheets/${sheetId}/copilot`, {
+    method: "POST",
+    body: JSON.stringify({ prompt }),
+  });
+}
+
 export { ApiError };

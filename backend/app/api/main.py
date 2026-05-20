@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.routes import health
-from app.api.v1 import workbooks, sheets
+from app.api.v1 import workbooks, sheets, ai
 
 
 @asynccontextmanager
@@ -31,3 +31,4 @@ app.add_middleware(
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(workbooks.router, prefix="/api/v1/workbooks", tags=["workbooks"])
 app.include_router(sheets.router, prefix="/api/v1", tags=["sheets"])
+app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
