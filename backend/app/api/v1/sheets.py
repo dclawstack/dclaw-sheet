@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -11,6 +12,8 @@ from app.repositories.cell_repo import CellRepository
 from app.schemas.sheet import SheetCreate, SheetRead, SheetUpdate
 from app.schemas.cell import CellBulkUpsert, CellRead, CellUpsert
 from app.services.formula.recalc import recalc_sheet
+from app.services.charts import recommend_chart_for_range
+from app.services.xlsx_io import export_sheet_xlsx
 
 router = APIRouter()
 
@@ -119,3 +122,35 @@ async def clear_cells(sheet_id: UUID, db: AsyncSession = Depends(get_db)):
     if sheet is None:
         raise HTTPException(status_code=404, detail="Sheet not found")
     await CellRepository(db).clear_sheet(sheet_id)
+
+
+@router.get("/sheets/{sheet_id}/export.xlsx")
+async def export_xlsx(sheet_id: UUID, db: AsyncSession = Depends(get_db)):
+    sheet = await SheetRepository(db).get_by_id(sheet_id)
+    if sheet is None:
+        raise HTTPException(status_code=404, detail="Sheet not found")
+    xlsx_bytes = await export_sheet_xlsx(db, sheet_id)
+    safe_name = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in sheet.name) or "sheet"
+    return Response(
+        content=xlsx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}.xlsx"'},
+    )
+
+
+@router.get("/sheets/{sheet_id}/chart")
+async def chart_recommendation(
+    sheet_id: UUID,
+    start: str = Query(..., description='Top-left cell ref of range, e.g. "A1"'),
+    end: str = Query(..., description='Bottom-right cell ref, e.g. "C20"'),
+    has_header: bool = Query(True),
+    db: AsyncSession = Depends(get_db),
+):
+    sheet = await SheetRepository(db).get_by_id(sheet_id)
+    if sheet is None:
+        raise HTTPException(status_code=404, detail="Sheet not found")
+    try:
+        spec = await recommend_chart_for_range(db, sheet_id, start, end, has_header=has_header)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid range: {exc}")
+    return {"vega_lite": spec}

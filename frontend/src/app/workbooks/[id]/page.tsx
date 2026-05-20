@@ -2,17 +2,20 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, Plus } from "lucide-react";
+import { ArrowLeft, Upload, Plus, BarChart3, Download } from "lucide-react";
 
 import {
   createSheet,
   getWorkbook,
   importCsv,
+  importXlsx,
   listSheets,
+  sheetExportUrl,
   type Sheet,
   type Workbook,
 } from "@/lib/api";
 import { SheetGrid } from "@/components/sheet-grid";
+import { ChartPanel } from "@/components/chart-panel";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -76,6 +79,25 @@ export default function WorkbookPage({ params }: PageProps) {
     }
   }
 
+  async function handleXlsxUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const created = await importXlsx(id, file);
+      const fresh = await listSheets(id);
+      setSheets(fresh);
+      if (created.length > 0) setActiveSheetId(created[0].id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "XLSX import failed");
+    } finally {
+      setBusy(false);
+      e.target.value = "";
+    }
+  }
+
+  const [showChart, setShowChart] = useState(false);
+
   const activeSheet = sheets.find((s) => s.id === activeSheetId) ?? null;
 
   return (
@@ -132,15 +154,57 @@ export default function WorkbookPage({ params }: PageProps) {
               disabled={busy}
             />
           </label>
+
+          <label className="rounded-md bg-white border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Import XLSX
+            <input
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              onChange={handleXlsxUpload}
+              disabled={busy}
+            />
+          </label>
+
+          {activeSheetId && (
+            <a
+              href={sheetExportUrl(activeSheetId)}
+              className="rounded-md bg-white border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              download
+            >
+              <Download className="h-4 w-4" />
+              Download XLSX
+            </a>
+          )}
+
+          {activeSheetId && (
+            <button
+              onClick={() => setShowChart((v) => !v)}
+              className={`rounded-md px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+                showChart
+                  ? "bg-[#10B981] text-white hover:bg-[#0E9F6E]"
+                  : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              {showChart ? "Hide chart" : "Auto chart"}
+            </button>
+          )}
         </div>
 
         {activeSheet ? (
-          <SheetGrid
-            key={activeSheet.id}
-            sheetId={activeSheet.id}
-            rowCount={activeSheet.row_count}
-            columnCount={activeSheet.column_count}
-          />
+          <div className={showChart ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
+            <SheetGrid
+              key={activeSheet.id}
+              sheetId={activeSheet.id}
+              rowCount={activeSheet.row_count}
+              columnCount={activeSheet.column_count}
+            />
+            {showChart && (
+              <ChartPanel sheetId={activeSheet.id} onClose={() => setShowChart(false)} />
+            )}
+          </div>
         ) : (
           <div className="rounded-lg bg-white p-12 shadow-sm border border-gray-200 text-center text-gray-500">
             <p className="mb-4">No sheets yet.</p>

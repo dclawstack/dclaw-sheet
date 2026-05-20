@@ -15,6 +15,8 @@ from app.schemas.workbook import (
     WorkbookUpdate,
 )
 from app.services.csv_import import import_csv
+from app.services.xlsx_io import import_xlsx
+from app.services.formula.recalc import recalc_sheet
 
 router = APIRouter()
 
@@ -95,4 +97,28 @@ async def import_csv_to_workbook(
     if not csv_bytes:
         raise HTTPException(status_code=400, detail="Empty CSV file")
     sheet = await import_csv(db, workbook_id, sheet_name, csv_bytes)
+    await recalc_sheet(db, sheet.id)
     return SheetRead.model_validate(sheet)
+
+
+@router.post("/{workbook_id}/import/xlsx", response_model=list[SheetRead], status_code=201)
+async def import_xlsx_to_workbook(
+    workbook_id: UUID,
+    file: UploadFile = File(...),
+    sheet_name: str = Form(default=""),
+    db: AsyncSession = Depends(get_db),
+):
+    wb_repo = WorkbookRepository(db)
+    workbook = await wb_repo.get_by_id(workbook_id)
+    if workbook is None:
+        raise HTTPException(status_code=404, detail="Workbook not found")
+    xlsx_bytes = await file.read()
+    if not xlsx_bytes:
+        raise HTTPException(status_code=400, detail="Empty XLSX file")
+    try:
+        sheets = await import_xlsx(db, workbook_id, sheet_name or None, xlsx_bytes)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to parse XLSX: {exc}")
+    for s in sheets:
+        await recalc_sheet(db, s.id)
+    return [SheetRead.model_validate(s) for s in sheets]

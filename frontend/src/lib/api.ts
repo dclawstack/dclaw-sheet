@@ -135,4 +135,32 @@ export async function importCsv(workbookId: string, file: File, sheetName: strin
   return response.json() as Promise<Sheet>;
 }
 
+export async function importXlsx(workbookId: string, file: File, sheetName?: string) {
+  const form = new FormData();
+  form.append("file", file);
+  if (sheetName) form.append("sheet_name", sheetName);
+  const url = `${API_BASE}/api/v1/workbooks/${workbookId}/import/xlsx`;
+  const response = await fetch(url, { method: "POST", body: form });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ApiError(`API error ${response.status}: ${text}`, response.status);
+  }
+  return response.json() as Promise<Sheet[]>;
+}
+
+export function sheetExportUrl(sheetId: string): string {
+  return `${API_BASE}/api/v1/sheets/${sheetId}/export.xlsx`;
+}
+
+export async function recommendChart(
+  sheetId: string,
+  start: string,
+  end: string,
+  hasHeader = true,
+) {
+  return fetchJson<{ vega_lite: unknown }>(
+    `/api/v1/sheets/${sheetId}/chart?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&has_header=${hasHeader}`,
+  );
+}
+
 export { ApiError };
