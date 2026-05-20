@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, Plus, BarChart3, Download, Bot } from "lucide-react";
+import { ArrowLeft, Upload, Plus, BarChart3, Download, Bot, Database } from "lucide-react";
 
 import {
   createSheet,
@@ -17,6 +17,7 @@ import {
 import { SheetGrid } from "@/components/sheet-grid";
 import { ChartPanel } from "@/components/chart-panel";
 import { CopilotPanel } from "@/components/copilot-panel";
+import { SqlPanel } from "@/components/sql-panel";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -99,6 +100,7 @@ export default function WorkbookPage({ params }: PageProps) {
 
   const [showChart, setShowChart] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
+  const [showSql, setShowSql] = useState(false);
   const [chartRange, setChartRange] = useState<{ start: string; end: string } | undefined>(undefined);
   const [gridRefreshTick, setGridRefreshTick] = useState(0);
 
@@ -209,12 +211,28 @@ export default function WorkbookPage({ params }: PageProps) {
               {showCopilot ? "Hide copilot" : "Copilot"}
             </button>
           )}
+
+          {activeSheetId && (
+            <button
+              onClick={() => setShowSql((v) => !v)}
+              className={`rounded-md px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+                showSql
+                  ? "bg-[#10B981] text-white hover:bg-[#0E9F6E]"
+                  : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Database className="h-4 w-4" />
+              {showSql ? "Hide SQL" : "SQL"}
+            </button>
+          )}
         </div>
 
         {activeSheet ? (
           <div
             className={
-              showChart || showCopilot ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""
+              showChart || showCopilot || showSql
+                ? "grid grid-cols-1 lg:grid-cols-2 gap-4"
+                : ""
             }
           >
             <SheetGrid
@@ -240,6 +258,12 @@ export default function WorkbookPage({ params }: PageProps) {
                     setChartRange(range);
                     setShowChart(true);
                   }}
+                />
+              )}
+              {showSql && (
+                <SqlPanel
+                  sheetId={activeSheet.id}
+                  onClose={() => setShowSql(false)}
                 />
               )}
             </div>
