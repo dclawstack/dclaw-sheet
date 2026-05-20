@@ -1,0 +1,14 @@
+{
+  "app_id": "sheet",
+  "name": "DClaw Sheet",
+  "category": "Spreadsheets",
+  "tagline": "AI-powered Excel",
+  "color": "#10B981",
+  "phase": "Future",
+  "frontend_port": 3020,
+  "backend_port": 8020,
+  "database": "dclaw_sheet",
+  "version": "1.0.0",
+  "api_base": "/api/v1",
+  "health": "/health/"
+}

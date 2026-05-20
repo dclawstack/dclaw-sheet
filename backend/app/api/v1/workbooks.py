@@ -1,0 +1,98 @@
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db
+from app.models import Workbook
+from app.repositories.workbook_repo import WorkbookRepository
+from app.repositories.sheet_repo import SheetRepository
+from app.schemas.sheet import SheetRead
+from app.schemas.workbook import (
+    WorkbookCreate,
+    WorkbookList,
+    WorkbookRead,
+    WorkbookUpdate,
+)
+from app.services.csv_import import import_csv
+
+router = APIRouter()
+
+
+@router.get("", response_model=WorkbookList)
+async def list_workbooks(
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = WorkbookRepository(db)
+    items, total = await repo.list_paginated(limit=limit, offset=offset)
+    return WorkbookList(items=[WorkbookRead.model_validate(w) for w in items], total=total)
+
+
+@router.post("", response_model=WorkbookRead, status_code=201)
+async def create_workbook(payload: WorkbookCreate, db: AsyncSession = Depends(get_db)):
+    repo = WorkbookRepository(db)
+    workbook = Workbook(name=payload.name, description=payload.description)
+    workbook = await repo.create(workbook)
+    return WorkbookRead.model_validate(workbook)
+
+
+@router.get("/{workbook_id}", response_model=WorkbookRead)
+async def get_workbook(workbook_id: UUID, db: AsyncSession = Depends(get_db)):
+    repo = WorkbookRepository(db)
+    workbook = await repo.get_by_id(workbook_id)
+    if workbook is None:
+        raise HTTPException(status_code=404, detail="Workbook not found")
+    return WorkbookRead.model_validate(workbook)
+
+
+@router.patch("/{workbook_id}", response_model=WorkbookRead)
+async def update_workbook(
+    workbook_id: UUID,
+    payload: WorkbookUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = WorkbookRepository(db)
+    workbook = await repo.get_by_id(workbook_id)
+    if workbook is None:
+        raise HTTPException(status_code=404, detail="Workbook not found")
+    workbook = await repo.update(workbook, **payload.model_dump(exclude_unset=True))
+    return WorkbookRead.model_validate(workbook)
+
+
+@router.delete("/{workbook_id}", status_code=204)
+async def delete_workbook(workbook_id: UUID, db: AsyncSession = Depends(get_db)):
+    repo = WorkbookRepository(db)
+    workbook = await repo.get_by_id(workbook_id)
+    if workbook is None:
+        raise HTTPException(status_code=404, detail="Workbook not found")
+    await repo.delete(workbook)
+
+
+@router.get("/{workbook_id}/sheets", response_model=list[SheetRead])
+async def list_sheets(workbook_id: UUID, db: AsyncSession = Depends(get_db)):
+    wb_repo = WorkbookRepository(db)
+    workbook = await wb_repo.get_by_id(workbook_id)
+    if workbook is None:
+        raise HTTPException(status_code=404, detail="Workbook not found")
+    sheets = await SheetRepository(db).list_by_workbook(workbook_id)
+    return [SheetRead.model_validate(s) for s in sheets]
+
+
+@router.post("/{workbook_id}/import/csv", response_model=SheetRead, status_code=201)
+async def import_csv_to_workbook(
+    workbook_id: UUID,
+    file: UploadFile = File(...),
+    sheet_name: str = Form(default="Imported"),
+    db: AsyncSession = Depends(get_db),
+):
+    wb_repo = WorkbookRepository(db)
+    workbook = await wb_repo.get_by_id(workbook_id)
+    if workbook is None:
+        raise HTTPException(status_code=404, detail="Workbook not found")
+    csv_bytes = await file.read()
+    if not csv_bytes:
+        raise HTTPException(status_code=400, detail="Empty CSV file")
+    sheet = await import_csv(db, workbook_id, sheet_name, csv_bytes)
+    return SheetRead.model_validate(sheet)

@@ -39,6 +39,7 @@ venv/
 .coverage
 htmlcov/
 
-# Alembic
-alembic/versions/*.py
-!alembic/versions/.gitkeep
+# SQLite (local dev)
+*.db
+*.sqlite
+*.sqlite3
