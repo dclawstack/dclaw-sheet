@@ -5,6 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Cell
 from app.repositories.base_repo import BaseRepository
 from app.schemas.cell import CellUpsert
+from app.services.formula.engine import is_formula
+
+
+def _normalise(payload: CellUpsert) -> CellUpsert:
+    """If the user typed a leading '=' in the value field, treat it as a formula."""
+    if payload.formula is None and is_formula(payload.value):
+        return payload.model_copy(update={"formula": payload.value, "value": None, "data_type": "formula"})
+    return payload
 
 
 class CellRepository(BaseRepository[Cell]):
@@ -28,6 +36,7 @@ class CellRepository(BaseRepository[Cell]):
         return result.scalar_one_or_none()
 
     async def upsert(self, sheet_id: UUID, payload: CellUpsert) -> Cell:
+        payload = _normalise(payload)
         existing = await self.get_by_coord(sheet_id, payload.row, payload.column)
         if existing is not None:
             existing.value = payload.value
@@ -52,6 +61,7 @@ class CellRepository(BaseRepository[Cell]):
     async def bulk_upsert(self, sheet_id: UUID, payloads: list[CellUpsert]) -> list[Cell]:
         if not payloads:
             return []
+        payloads = [_normalise(p) for p in payloads]
         coord_to_payload = {(p.row, p.column): p for p in payloads}
         coords = list(coord_to_payload.keys())
         existing_result = await self.db.execute(

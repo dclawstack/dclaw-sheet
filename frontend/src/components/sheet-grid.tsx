@@ -56,10 +56,20 @@ export function SheetGrid({ sheetId, rowCount, columnCount }: SheetGridProps) {
     setEditing(null);
     const key = `${row}:${col}`;
     const existing = cells[key];
-    if ((existing?.value ?? "") === value) return;
+    const previous = existing?.formula ?? existing?.value ?? "";
+    if (previous === value) return;
     try {
       const updated = await upsertCell(sheetId, { row, column: col, value });
-      setCells((prev) => ({ ...prev, [key]: updated }));
+      // If this cell or another formula cell may have recomputed, refetch the sheet
+      // so dependent formula values stay in sync.
+      if (value.trimStart().startsWith("=") || Object.values(cells).some((c) => c.formula)) {
+        const fresh = await listCells(sheetId);
+        const byKey: Record<string, typeof updated> = {};
+        for (const c of fresh) byKey[`${c.row}:${c.column}`] = c;
+        setCells(byKey);
+      } else {
+        setCells((prev) => ({ ...prev, [key]: updated }));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save cell");
     }
@@ -105,13 +115,13 @@ export function SheetGrid({ sheetId, rowCount, columnCount }: SheetGridProps) {
                       className="border border-gray-200 p-0 min-w-[100px] h-8"
                       onDoubleClick={() => {
                         setEditing({ row: r, col: c });
-                        setDraft(cell?.value ?? "");
+                        setDraft(cell?.formula ?? cell?.value ?? "");
                       }}
                     >
                       {isEditing ? (
                         <input
                           autoFocus
-                          className="w-full h-8 px-2 outline-none border-2 border-[#10B981]"
+                          className="w-full h-8 px-2 outline-none border-2 border-[#10B981] font-mono"
                           value={draft}
                           onChange={(e) => setDraft(e.target.value)}
                           onBlur={() => commit(r, c, draft)}
@@ -121,7 +131,12 @@ export function SheetGrid({ sheetId, rowCount, columnCount }: SheetGridProps) {
                           }}
                         />
                       ) : (
-                        <div className="px-2 h-8 leading-8 truncate cursor-cell">
+                        <div
+                          className={`px-2 h-8 leading-8 truncate cursor-cell ${
+                            cell?.value?.startsWith("#") ? "text-red-600" : ""
+                          } ${cell?.data_type === "number" ? "text-right" : ""}`}
+                          title={cell?.formula ?? undefined}
+                        >
                           {cell?.value ?? ""}
                         </div>
                       )}

@@ -10,6 +10,7 @@ from app.repositories.workbook_repo import WorkbookRepository
 from app.repositories.cell_repo import CellRepository
 from app.schemas.sheet import SheetCreate, SheetRead, SheetUpdate
 from app.schemas.cell import CellBulkUpsert, CellRead, CellUpsert
+from app.services.formula.recalc import recalc_sheet
 
 router = APIRouter()
 
@@ -89,6 +90,8 @@ async def upsert_cell(
     if sheet is None:
         raise HTTPException(status_code=404, detail="Sheet not found")
     cell = await CellRepository(db).upsert(sheet_id, payload)
+    await recalc_sheet(db, sheet_id)
+    await db.refresh(cell)
     return CellRead.model_validate(cell)
 
 
@@ -103,6 +106,9 @@ async def bulk_upsert_cells(
     if sheet is None:
         raise HTTPException(status_code=404, detail="Sheet not found")
     cells = await CellRepository(db).bulk_upsert(sheet_id, payload.cells)
+    await recalc_sheet(db, sheet_id)
+    for c in cells:
+        await db.refresh(c)
     return [CellRead.model_validate(c) for c in cells]
 
 
