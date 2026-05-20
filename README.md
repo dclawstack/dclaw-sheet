@@ -3,11 +3,6 @@
 > **The single source of truth for new DClaw app development.**
 > Clone this repo, rename it, fill in your `PRODUCT-SPEC.md`, and hand it to your coding agents.
 
-## Code Manager
-
-- **Name:** Tharuni Dayara
-- **Email:** tharunidayara@gmail.com
-
 ## What This Is
 
 This scaffold contains the **complete boilerplate** for any DClaw vertical SaaS app:
@@ -99,3 +94,9 @@ Keep `pytest-asyncio==0.24.0` pinned in `requirements.txt`. v1.3.0 breaks fixtur
 - `frontend/src/components/ui/*.tsx` — Pre-built components (use as-is)
 - `requirements.txt` — Keep `pytest-asyncio==0.24.0` pinned
 - `.github/workflows/ci.yml` — Do not delete
+
+## Code Manager
+
+| Name | Email |
+|------|-------|
+| Tharuni Dayara | tharunidayara@gmail.com |
