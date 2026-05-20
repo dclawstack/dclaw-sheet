@@ -1,7 +1,12 @@
-# DClaw Scaffold
+# DClaw Sheet
 
 > **The single source of truth for new DClaw app development.**
 > Clone this repo, rename it, fill in your `PRODUCT-SPEC.md`, and hand it to your coding agents.
+
+## Code Manager
+
+- **Name:** Tharuni Dayara
+- **Email:** tharunidayara@gmail.com
 
 ## What This Is
 
@@ -24,10 +29,10 @@ git clone https://github.com/dclawstack/dclaw-scaffold.git dclaw-YOURAPP
 cd dclaw-YOURAPP
 
 # 2. Find/replace placeholders
-# {APP_NAME}    -> Your app name (e.g., CRM)
+# {APP_NAME}    -> Your app name (e.g., Sheet)
 # {BACKEND_PORT}-> Next free port (see port registry below)
 # {FRONTEND_PORT}-> Next free port
-# {DB_NAME}     -> dclaw_yourapp
+# {DB_NAME}     -> dclaw_sheet
 
 # 3. Write your PRODUCT-SPEC.md
 # See PRODUCT-SPEC.md.template for the format
@@ -62,6 +67,7 @@ Keep `pytest-asyncio==0.24.0` pinned in `requirements.txt`. v1.3.0 breaks fixtur
 | dclaw-crm | 8095 | 3006 | dclaw_crm |
 | dclaw-finance | 8096 | 3007 | dclaw_finance |
 | dclaw-hr | 8097 | 3008 | dclaw_hr |
+| **dclaw-sheet** | **8020** | **3020** | **dclaw_sheet** |
 | **TBD #9** | **8098** | **3009** | **dclaw_xxx** |
 | **TBD #10** | **8100** | **3010** | **dclaw_xxx** |
 

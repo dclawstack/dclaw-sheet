@@ -1,4 +1,4 @@
-DClaw App deployed!
+DClaw Sheet deployed!
 
-Backend: {{ include "dclaw-app.fullname" . }}-backend
-Frontend: {{ include "dclaw-app.fullname" . }}-frontend
+Backend: {{ include "dclaw-sheet.fullname" . }}-backend
+Frontend: {{ include "dclaw-sheet.fullname" . }}-frontend

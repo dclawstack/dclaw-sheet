@@ -1,9 +1,9 @@
 {
-  "name": "dclaw-app-frontend",
+  "name": "dclaw-sheet-frontend",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3022",
+    "dev": "next dev --port 3020",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
