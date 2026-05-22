@@ -11,7 +11,7 @@ from app.repositories.workbook_repo import WorkbookRepository
 from app.repositories.cell_repo import CellRepository
 from app.schemas.sheet import SheetCreate, SheetRead, SheetUpdate
 from app.schemas.cell import CellBulkUpsert, CellRead, CellUpsert
-from app.services.formula.recalc import recalc_sheet
+from app.services.formula.recalc import recalc_after_changes, recalc_sheet
 from app.services.charts import recommend_chart_for_range
 from app.services.xlsx_io import export_sheet_xlsx
 
@@ -93,7 +93,7 @@ async def upsert_cell(
     if sheet is None:
         raise HTTPException(status_code=404, detail="Sheet not found")
     cell = await CellRepository(db).upsert(sheet_id, payload)
-    await recalc_sheet(db, sheet_id)
+    await recalc_after_changes(db, sheet_id, [(cell.row, cell.column)])
     await db.refresh(cell)
     return CellRead.model_validate(cell)
 
@@ -109,7 +109,7 @@ async def bulk_upsert_cells(
     if sheet is None:
         raise HTTPException(status_code=404, detail="Sheet not found")
     cells = await CellRepository(db).bulk_upsert(sheet_id, payload.cells)
-    await recalc_sheet(db, sheet_id)
+    await recalc_after_changes(db, sheet_id, [(c.row, c.column) for c in cells])
     for c in cells:
         await db.refresh(c)
     return [CellRead.model_validate(c) for c in cells]

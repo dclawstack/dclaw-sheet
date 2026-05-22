@@ -630,16 +630,14 @@ def _fn_index(args):
     return items[row_idx - 1]
 
 
+# ROW / COLUMN are dispatched in the evaluator (need cell context for no-arg
+# form and need raw AST nodes to compute the address of an unresolved cell ref).
 def _fn_row(args):
-    if not args:
-        return None  # context-injected later
-    raise FormulaError("VALUE", "ROW(ref) not supported in v1")
+    raise FormulaError("ERROR", "ROW handled by evaluator")
 
 
 def _fn_column(args):
-    if not args:
-        return None
-    raise FormulaError("VALUE", "COLUMN(ref) not supported in v1")
+    raise FormulaError("ERROR", "COLUMN handled by evaluator")
 
 
 _FUNCTIONS: dict[str, Callable[[list[Any]], Any]] = {
@@ -712,20 +710,35 @@ def _coerce_cell(value: Any, data_type: str | None) -> Any:
 
 @dataclass
 class GridContext:
-    """Lookup helper for resolving cell references during evaluation."""
+    """Lookup helper for resolving cell references during evaluation.
+
+    `current` is the coordinate of the cell whose formula is being evaluated;
+    it's how ROW() / COLUMN() with no args resolve to "this cell".
+    """
 
     values: dict[tuple[int, int], Any] = field(default_factory=dict)
+    current: tuple[int, int] | None = None
 
     def get(self, coord: tuple[int, int]) -> Any:
         return self.values.get(coord, 0)
 
 
-def evaluate(source: str | Node, grid: dict[tuple[int, int], Any] | GridContext) -> Any:
+def evaluate(
+    source: str | Node,
+    grid: dict[tuple[int, int], Any] | GridContext,
+    *,
+    current: tuple[int, int] | None = None,
+) -> Any:
     if isinstance(source, str):
         node = parse(source)
     else:
         node = source
-    ctx = grid if isinstance(grid, GridContext) else GridContext(values=grid)
+    if isinstance(grid, GridContext):
+        ctx = grid
+        if current is not None:
+            ctx.current = current
+    else:
+        ctx = GridContext(values=grid, current=current)
     return _eval(node, ctx)
 
 
@@ -800,7 +813,7 @@ def _eval_binary(node: BinaryOp, ctx: GridContext) -> Any:
 
 def _eval_funccall(node: FuncCall, ctx: GridContext) -> Any:
     name = node.name.upper()
-    # IFERROR needs lazy fallback semantics
+    # IFERROR — lazy fallback: don't evaluate the fallback unless the first throws
     if name == "IFERROR":
         if len(node.args) != 2:
             raise FormulaError("VALUE", "IFERROR expects 2 arguments")
@@ -808,6 +821,38 @@ def _eval_funccall(node: FuncCall, ctx: GridContext) -> Any:
             return _eval(node.args[0], ctx)
         except FormulaError:
             return _eval(node.args[1], ctx)
+    # IF — short-circuit: only evaluate the taken branch (matches Excel semantics)
+    if name == "IF":
+        if len(node.args) not in (2, 3):
+            raise FormulaError("VALUE", "IF expects 2 or 3 arguments")
+        if _truthy(_eval(node.args[0], ctx)):
+            return _eval(node.args[1], ctx)
+        if len(node.args) == 3:
+            return _eval(node.args[2], ctx)
+        return False
+    # ROW / COLUMN — need the AST to resolve "ROW(ref)" without dereferencing
+    if name == "ROW":
+        if not node.args:
+            if ctx.current is None:
+                raise FormulaError("VALUE", "ROW() needs a cell context")
+            return ctx.current[0] + 1
+        target = node.args[0]
+        if isinstance(target, CellRefNode):
+            return cell_ref_to_coord(target.ref)[0] + 1
+        if isinstance(target, RangeNode):
+            return cell_ref_to_coord(target.start)[0] + 1
+        raise FormulaError("VALUE", "ROW expects a cell or range reference")
+    if name == "COLUMN":
+        if not node.args:
+            if ctx.current is None:
+                raise FormulaError("VALUE", "COLUMN() needs a cell context")
+            return ctx.current[1] + 1
+        target = node.args[0]
+        if isinstance(target, CellRefNode):
+            return cell_ref_to_coord(target.ref)[1] + 1
+        if isinstance(target, RangeNode):
+            return cell_ref_to_coord(target.start)[1] + 1
+        raise FormulaError("VALUE", "COLUMN expects a cell or range reference")
     fn = _FUNCTIONS.get(name)
     if fn is None:
         raise FormulaError("NAME", f"Unknown function {name}")

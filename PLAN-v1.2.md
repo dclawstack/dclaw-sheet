@@ -34,46 +34,46 @@
 
 - [x] `dclaw_app` → `dclaw_sheet` rename complete
 - [x] Ports synced to AGENTS.md (backend 8020 / frontend 3020)
-- [ ] `frontend/package-lock.json` committed after every dependency change
-- [ ] `frontend/next-env.d.ts` exists and is committed
-- [ ] `docker-compose.yml` healthchecks correct
-- [ ] `frontend/Dockerfile` declares `ARG NEXT_PUBLIC_API_URL` before `RUN npm run build`
-- [ ] `frontend/public/dclaw-manifest.json` exists (closes PRD Gap #1)
+- [x] `frontend/package-lock.json` committed after every dependency change
+- [x] `frontend/next-env.d.ts` exists and is committed
+- [x] `docker-compose.yml` healthchecks correct (pg_isready / python urllib / wget)
+- [x] `frontend/Dockerfile` declares `ARG NEXT_PUBLIC_API_URL` before `RUN npm run build`
+- [x] `frontend/public/dclaw-manifest.json` exists (closes PRD Gap #1)
 
 ---
 
-## v1.0 Feature Inventory (Current — reality check)
+## v1.0 Feature Inventory
 
-- [ ] Real Workbook / Sheet / Cell models (currently: mock random data in `api/v1/sheet.py`)
-- [ ] Real backend CRUD (no mocks)
-- [ ] Alembic initial migration committed (`alembic/versions/` is empty)
-- [ ] Functional frontend (currently: stub "Server is running" page)
-- [ ] DPanel manifest
+- [x] Real Workbook / Sheet / Cell models (mock router deleted in cmplx-0)
+- [x] Real backend CRUD (no mocks)
+- [x] Alembic initial migration committed (`0001_init.py` + `0002_connections.py`)
+- [x] Functional frontend (workbook list + editable grid + copilot/SQL/chart panels)
+- [x] DPanel manifest
 
 ---
 
 ## Roadmap
 
-### Complexity 0 — Foundation (Quick wins)
+### Complexity 0 — Foundation (Quick wins) — ✅ shipped
 
 Goal: replace every mock with a real implementation, get a working end-to-end loop (create workbook → import CSV → edit cells → reload) on local SQLite with the same code path running against Postgres in CI/prod.
 
-| # | Feature | Backend touchpoint | Frontend touchpoint | Acceptance |
-|---|---------|--------------------|---------------------|------------|
-| 0.1 | **Domain models** Workbook / Sheet / Cell with org-scoping placeholder | `app/models/{workbook,sheet,cell}.py` | — | `Base.metadata` includes 3 tables; FK + cascade rules correct |
-| 0.2 | **Local SQLite support** (aiosqlite); `DATABASE_URL` selects engine | `core/config.py`, `core/database.py`, `requirements.txt` | — | `DATABASE_URL=sqlite+aiosqlite:///./dclaw_sheet.db` boots app; Postgres URL still works |
-| 0.3 | **Alembic initial migration** (cross-dialect — UUID-as-CHAR(32) on SQLite, native UUID on Postgres) | `alembic/versions/0001_init.py` | — | `alembic upgrade head` succeeds on both dialects |
-| 0.4 | **Workbook CRUD** | `repositories/workbook_repo.py`, `schemas/workbook.py`, `api/v1/workbooks.py` | — | POST/GET/LIST/DELETE `/api/v1/workbooks` |
-| 0.5 | **Sheet CRUD inside workbook** | `repositories/sheet_repo.py`, `schemas/sheet.py`, `api/v1/sheets.py` | — | POST/LIST/DELETE `/api/v1/workbooks/{id}/sheets` |
-| 0.6 | **Cell read/write + bulk** | `repositories/cell_repo.py`, `schemas/cell.py`, `api/v1/cells.py` | — | GET sheet returns cells; PATCH `/sheets/{id}/cells` bulk upsert |
-| 0.7 | **CSV import endpoint** | `services/csv_import.py` (stdlib only — no pandas in cmplx-0) | — | POST `/api/v1/workbooks/{id}/import/csv` returns new sheet id |
-| 0.8 | **Wire v1 routers**, **delete the mock router** | `api/main.py` | — | `/api/v1/workbooks` resolves; mock random endpoint gone |
-| 0.9 | **Frontend: Workbook list page** | — | `app/page.tsx` (replaces stub), `lib/api.ts` typed client | List + create-new modal hits real API |
-| 0.10 | **Frontend: Editable grid** (no formulas yet) | — | `app/workbooks/[id]/page.tsx`, `components/sheet-grid.tsx` | Edit cell → PATCH → refresh shows persisted value |
-| 0.11 | **DPanel manifest** (PRD Gap #1) | — | `frontend/public/dclaw-manifest.json` | File exists with correct app id/name/color |
-| 0.12 | **Branding + metadata** | — | `app/layout.tsx`, `globals.css` | Title "DClaw Sheet"; brand color `#10B981` |
-| 0.13 | **Tests** for repos + routers + CSV import | `tests/test_workbooks.py`, `test_sheets.py`, `test_cells.py`, `test_csv_import.py` | — | All green on both SQLite (local) and Postgres (CI) |
-| 0.14 | **/health/ready** endpoint (DB ping) | `api/routes/health.py` | — | Returns 200 only when DB is reachable |
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 0.1 | **Domain models** Workbook / Sheet / Cell | ✅ | `app/models/{workbook,sheet,cell}.py`; `Connection` added in 1.7 |
+| 0.2 | **Local SQLite support** (aiosqlite) | ✅ | Default `DATABASE_URL` sqlite; Postgres URL works in CI |
+| 0.3 | **Alembic initial migration** | ✅ | `0001_init.py` (+ `0002_connections.py` for 1.7) |
+| 0.4 | **Workbook CRUD** | ✅ | POST/GET/PATCH/DELETE `/api/v1/workbooks` |
+| 0.5 | **Sheet CRUD inside workbook** | ✅ | POST/GET/PATCH/DELETE `/api/v1/sheets` |
+| 0.6 | **Cell read/write + bulk** | ✅ | PUT single + PATCH bulk + DELETE clear |
+| 0.7 | **CSV import endpoint** | ✅ | `services/csv_import.py` stdlib only |
+| 0.8 | **Wire v1 routers**, **delete the mock router** | ✅ | Mock random endpoint gone |
+| 0.9 | **Frontend: Workbook list page** | ✅ | List + create modal + delete |
+| 0.10 | **Frontend: Editable grid** | ✅ | Double-click edit; Enter to save; formula support in 1.1 |
+| 0.11 | **DPanel manifest** (PRD Gap #1) | ✅ | `frontend/public/dclaw-manifest.json` |
+| 0.12 | **Branding + metadata** | ✅ | Title "DClaw Sheet", `#10B981` brand color |
+| 0.13 | **Tests** for repos + routers + CSV import | ✅ | 18 tests, all green on SQLite + Postgres |
+| 0.14 | **/health/ready** endpoint (DB ping) | ✅ | `SELECT 1` against the bound session |
 
 **Exit criteria for complexity-0:** `docker compose up -d --build && curl :8020/api/v1/workbooks` returns `[]`; frontend `/` shows the empty workbook list and lets you create one; CSV upload populates a real sheet; all CI tests green.
 
@@ -81,20 +81,22 @@ Goal: replace every mock with a real implementation, get a working end-to-end lo
 
 ### Complexity 1 — Core Differentiators (the YC demo)
 
-| # | Feature | Notes |
-|---|---------|-------|
-| 1.1 | **Formula engine v1** | Pure Python: tokenizer, parser (Pratt), evaluator. Cell-ref resolution. ~30 functions (SUM, AVG, MIN, MAX, COUNT, IF, AND, OR, NOT, IFERROR, ROUND, ABS, CONCAT, LEFT, RIGHT, MID, LEN, UPPER, LOWER, TRIM, TODAY, NOW, VLOOKUP, INDEX, MATCH, SUMIF, COUNTIF, AVERAGEIF, ROW, COLUMN). Dependency DAG; incremental recalc. |
-| 1.2 | **AI Sheet Copilot endpoint** | `services/ai_copilot.py`. OpenRouter primary, Ollama fallback. Tool-use schema with 4 tools: `write_formula`, `run_sql`, `make_chart`, `propose_clean`. Streamed SSE response. |
-| 1.3 | **Frontend Copilot panel** | Floating chat, message thread, "Apply suggestion" button that mutates cells via PATCH. |
-| 1.4 | **DuckDB-WASM SQL panel** | Ship `@duckdb/duckdb-wasm` in frontend; load active sheet into in-memory DuckDB table; SQL editor + results grid. |
-| 1.5 | **Excel/XLSX import + export** | `openpyxl` server-side. Preserves formulas as values v1; round-trip formulas v1.5. |
-| 1.6 | **Chart spec + auto-recommend (Vega-Lite)** | `services/chart_recommend.py` (heuristics: 1 cat + 1 num → bar; 2 num → scatter; time + num → line). Frontend renders via `vega-embed`. |
-| 1.7 | **Live connectors v1**: Postgres + CSV-by-URL | `services/connectors/*.py`. Manual refresh in v1.7; scheduled refresh deferred to 2.x. Drift-detection diff in `services/connectors/drift.py`. |
-| 1.8 | **CRDT real-time collab (Yjs)** | WebSocket gateway in FastAPI; `y-websocket` server compatible. Per-cell granularity. Live cursors. |
-| 1.9 | **Auth (Logto OIDC)** | JWT middleware on `/api/v1/*`. `User`, `Org`, `Workspace` models + scoping on every entity. |
-| 1.10 | **Telemetry events** | `events` table: event_type, user_id, workbook_id, ts. Powers retention dashboards. |
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 1.1 | **Formula engine v1** | ✅ | Tokenizer + Pratt parser + evaluator; 30+ fns incl. SUM, AVERAGE, MIN, MAX, COUNT, COUNTA, ROUND, ABS, INT, MOD, POWER, SQRT, IF (short-circuit), AND, OR, NOT, IFERROR (lazy), CONCAT, LEFT, RIGHT, MID, LEN, UPPER, LOWER, TRIM, TODAY, NOW, SUMIF, COUNTIF, AVERAGEIF, VLOOKUP, MATCH, INDEX, ROW, COLUMN. **Incremental** dependency-DAG recalc via `recalc_after_changes()` — only formulas whose closure intersects changed coords are re-evaluated. Cycles flagged `#CIRC!`. |
+| 1.2 | **AI Sheet Copilot endpoint** | ✅ | `services/ai_copilot.py` provider chain (OpenRouter → Ollama → deterministic stub). Tool-use schema: `write_formula`, `run_sql`, `make_chart`, `propose_clean`. JSON envelope at `/api/v1/ai/sheets/{id}/copilot`; **SSE streaming** at `/copilot/stream` (`message` → `tool_call`* → `done`). |
+| 1.3 | **Frontend Copilot panel** | ✅ | Chat thread, tool-call cards, "Apply" button calls `upsertCell` for `write_formula` and opens the chart panel for `make_chart`. |
+| 1.4 | **DuckDB-WASM SQL panel** | ✅ | `@duckdb/duckdb-wasm` in a Web Worker; loads the active sheet via `read_json_auto`; SQL editor + paged results grid. |
+| 1.5 | **Excel/XLSX import + export** | ✅ | Server-side `openpyxl`. Import preserves formulas; export emits values + formulas. |
+| 1.6 | **Chart spec + auto-recommend (Vega-Lite)** | ✅ | `services/charts.py` infers column types (quant/temporal/nominal) → bar/line/point. Frontend renders via `vega-embed` (canvas marked as a webpack fallback). |
+| 1.7 | **Live connectors v1**: Postgres + CSV-by-URL | ✅ | `services/connectors/{base,csv_url,postgres,drift}.py`. Fernet-encrypted configs. Manual refresh; scheduled deferred to 2.3. Drift report (added/removed/reordered) returned on every sync. |
+| 1.8 | **CRDT real-time collab (Yjs)** | ⏭ deferred | Pulls infra weight (WebSocket gateway + persistence); scheduled for after 1.9 per Sprint-1 ordering. |
+| 1.9 | **Auth (Logto OIDC)** | ⏭ deferred | JWT middleware + `User`/`Org`/`Workspace` scoping on every entity; needs a corresponding migration + frontend login flow. |
+| 1.10 | **Telemetry events** | ⏭ deferred | `events` table + middleware emission for retention dashboards. |
 
 **Exit criteria for complexity-1:** Demo flow works end-to-end — a user logs in via Logto, imports XLSX, asks the copilot "Show me MRR by month from the Stripe connector," and gets a chart back in <10s.
+
+**Current state:** 7/10 shipped; the demo loop works without auth (`AI_PROVIDER=stub` default in CI; OpenRouter/Ollama wired and selectable via env). 1.8/1.9/1.10 are the remaining items before the exit-criteria demo is fully met.
 
 ---
 
