@@ -7,6 +7,7 @@ from app.models.connection import Connection
 from app.models.event import Event
 from app.models.validation_rule import ValidationRule
 from app.models.cell_change import CellChange
+from app.models.automation import Automation
 
 __all__ = [
     "Base",
@@ -21,4 +22,5 @@ __all__ = [
     "Event",
     "ValidationRule",
     "CellChange",
+    "Automation",
 ]
