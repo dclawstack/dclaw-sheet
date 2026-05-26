@@ -17,6 +17,7 @@ from app.schemas.workbook import (
 from app.services.csv_import import import_csv
 from app.services.xlsx_io import import_xlsx
 from app.services.formula.recalc import recalc_sheet
+from app.services.telemetry import emit
 
 router = APIRouter()
 
@@ -37,6 +38,7 @@ async def create_workbook(payload: WorkbookCreate, db: AsyncSession = Depends(ge
     repo = WorkbookRepository(db)
     workbook = Workbook(name=payload.name, description=payload.description)
     workbook = await repo.create(workbook)
+    await emit(db, "workbook.created", workbook_id=workbook.id, payload={"name": workbook.name})
     return WorkbookRead.model_validate(workbook)
 
 
@@ -70,6 +72,7 @@ async def delete_workbook(workbook_id: UUID, db: AsyncSession = Depends(get_db))
     if workbook is None:
         raise HTTPException(status_code=404, detail="Workbook not found")
     await repo.delete(workbook)
+    await emit(db, "workbook.deleted", payload={"name": workbook.name})
 
 
 @router.get("/{workbook_id}/sheets", response_model=list[SheetRead])
@@ -98,6 +101,13 @@ async def import_csv_to_workbook(
         raise HTTPException(status_code=400, detail="Empty CSV file")
     sheet = await import_csv(db, workbook_id, sheet_name, csv_bytes)
     await recalc_sheet(db, sheet.id)
+    await emit(
+        db,
+        "csv.imported",
+        workbook_id=workbook_id,
+        sheet_id=sheet.id,
+        payload={"sheet_name": sheet_name, "bytes": len(csv_bytes)},
+    )
     return SheetRead.model_validate(sheet)
 
 
@@ -121,4 +131,10 @@ async def import_xlsx_to_workbook(
         raise HTTPException(status_code=400, detail=f"Failed to parse XLSX: {exc}")
     for s in sheets:
         await recalc_sheet(db, s.id)
+    await emit(
+        db,
+        "xlsx.imported",
+        workbook_id=workbook_id,
+        payload={"sheets": len(sheets), "bytes": len(xlsx_bytes)},
+    )
     return [SheetRead.model_validate(s) for s in sheets]

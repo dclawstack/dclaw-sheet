@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Table2, Plus, Trash2, Database } from "lucide-react";
+import { Table2, Plus, Trash2, Database, Activity } from "lucide-react";
 
 import {
   createWorkbook,
@@ -72,6 +72,13 @@ export default function Home() {
           <h1 className="text-xl font-semibold text-white">DClaw Sheet</h1>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/events"
+            className="rounded-md bg-white/10 hover:bg-white/20 px-4 py-2 text-sm text-white font-medium flex items-center gap-2"
+          >
+            <Activity className="h-4 w-4" />
+            Activity
+          </Link>
           <Link
             href="/connections"
             className="rounded-md bg-white/10 hover:bg-white/20 px-4 py-2 text-sm text-white font-medium flex items-center gap-2"

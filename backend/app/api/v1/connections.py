@@ -17,6 +17,7 @@ from app.schemas.connection import (
 from app.schemas.sheet import SheetRead
 from app.services.connectors import build_connector
 from app.services.connector_sync import sync_into_sheet, sync_into_workbook
+from app.services.telemetry import emit
 
 router = APIRouter()
 
@@ -44,6 +45,7 @@ async def create_connection(payload: ConnectionCreate, db: AsyncSession = Depend
         config_encrypted=encrypt_json(payload.config),
     )
     conn = await ConnectionRepository(db).create(conn)
+    await emit(db, "connection.created", payload={"type": conn.type, "name": conn.name})
     return ConnectionRead.model_validate(conn)
 
 
@@ -84,6 +86,13 @@ async def sync_into_workbook_endpoint(
         sheet, drift = await sync_into_workbook(db, conn, workbook_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Connector fetch failed: {exc}")
+    await emit(
+        db,
+        "connection.synced",
+        workbook_id=workbook_id,
+        sheet_id=sheet.id,
+        payload={"connection_type": conn.type, "drift": drift.to_dict()},
+    )
     return {"sheet": SheetRead.model_validate(sheet).model_dump(mode="json"), "drift": drift.to_dict()}
 
 
@@ -101,4 +110,11 @@ async def refresh_sheet(sheet_id: UUID, db: AsyncSession = Depends(get_db)):
         drift = await sync_into_sheet(db, conn, sheet)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Connector fetch failed: {exc}")
+    await emit(
+        db,
+        "connection.refreshed",
+        workbook_id=sheet.workbook_id,
+        sheet_id=sheet.id,
+        payload={"connection_type": conn.type, "drift": drift.to_dict()},
+    )
     return {"sheet": SheetRead.model_validate(sheet).model_dump(mode="json"), "drift": drift.to_dict()}

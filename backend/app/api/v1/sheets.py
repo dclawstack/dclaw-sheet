@@ -14,6 +14,7 @@ from app.schemas.cell import CellBulkUpsert, CellRead, CellUpsert
 from app.services.formula.recalc import recalc_after_changes, recalc_sheet
 from app.services.charts import recommend_chart_for_range
 from app.services.xlsx_io import export_sheet_xlsx
+from app.services.telemetry import emit
 
 router = APIRouter()
 
@@ -37,6 +38,13 @@ async def create_sheet(
         column_count=payload.column_count,
     )
     sheet = await repo.create(sheet)
+    await emit(
+        db,
+        "sheet.created",
+        workbook_id=workbook_id,
+        sheet_id=sheet.id,
+        payload={"name": sheet.name},
+    )
     return SheetRead.model_validate(sheet)
 
 
@@ -130,6 +138,13 @@ async def export_xlsx(sheet_id: UUID, db: AsyncSession = Depends(get_db)):
     if sheet is None:
         raise HTTPException(status_code=404, detail="Sheet not found")
     xlsx_bytes = await export_sheet_xlsx(db, sheet_id)
+    await emit(
+        db,
+        "sheet.exported",
+        workbook_id=sheet.workbook_id,
+        sheet_id=sheet.id,
+        payload={"bytes": len(xlsx_bytes)},
+    )
     safe_name = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in sheet.name) or "sheet"
     return Response(
         content=xlsx_bytes,
@@ -153,4 +168,11 @@ async def chart_recommendation(
         spec = await recommend_chart_for_range(db, sheet_id, start, end, has_header=has_header)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Invalid range: {exc}")
+    await emit(
+        db,
+        "chart.requested",
+        workbook_id=sheet.workbook_id,
+        sheet_id=sheet.id,
+        payload={"start": start, "end": end, "mark": spec.get("mark")},
+    )
     return {"vega_lite": spec}

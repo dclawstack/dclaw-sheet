@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.repositories.sheet_repo import SheetRepository
 from app.schemas.ai import CopilotRequest, CopilotResponseBody
 from app.services.ai_copilot import answer
+from app.services.telemetry import emit
 
 router = APIRouter()
 
@@ -23,6 +24,17 @@ async def copilot(
     if sheet is None:
         raise HTTPException(status_code=404, detail="Sheet not found")
     resp = await answer(db, sheet_id, payload.prompt)
+    await emit(
+        db,
+        "copilot.asked",
+        workbook_id=sheet.workbook_id,
+        sheet_id=sheet.id,
+        payload={
+            "provider": resp.provider,
+            "prompt_chars": len(payload.prompt),
+            "tool_calls": len(resp.tool_calls),
+        },
+    )
     return CopilotResponseBody(
         provider=resp.provider,
         message=resp.message,
@@ -50,6 +62,17 @@ async def copilot_stream(
     if sheet is None:
         raise HTTPException(status_code=404, detail="Sheet not found")
     resp = await answer(db, sheet_id, payload.prompt)
+    await emit(
+        db,
+        "copilot.asked",
+        workbook_id=sheet.workbook_id,
+        sheet_id=sheet.id,
+        payload={
+            "provider": resp.provider,
+            "stream": True,
+            "tool_calls": len(resp.tool_calls),
+        },
+    )
 
     async def generator():
         yield _sse("message", {"provider": resp.provider, "message": resp.message})

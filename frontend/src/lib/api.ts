@@ -247,4 +247,44 @@ export async function refreshLinkedSheet(sheetId: string) {
   });
 }
 
+export interface TelemetryEvent {
+  id: string;
+  event_type: string;
+  user_id: string | null;
+  workbook_id: string | null;
+  sheet_id: string | null;
+  payload: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface DailyCount {
+  day: string;
+  count: number;
+}
+
+export interface TypeCount {
+  event_type: string;
+  count: number;
+}
+
+export interface TelemetrySummary {
+  total_events: number;
+  events_today: number;
+  daily_counts: DailyCount[];
+  by_type: TypeCount[];
+  daily_active_workbooks: DailyCount[];
+}
+
+export async function listEvents(limit = 100, eventType?: string) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (eventType) params.set("event_type", eventType);
+  return fetchJson<{ items: TelemetryEvent[]; total: number }>(
+    `/api/v1/events?${params}`,
+  );
+}
+
+export async function telemetrySummary(days = 7) {
+  return fetchJson<TelemetrySummary>(`/api/v1/events/summary?days=${days}`);
+}
+
 export { ApiError };
