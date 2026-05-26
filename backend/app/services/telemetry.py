@@ -22,6 +22,7 @@ async def emit(
     event_type: str,
     *,
     user_id: str | None = None,
+    workspace_id: UUID | None = None,
     workbook_id: UUID | None = None,
     sheet_id: UUID | None = None,
     payload: dict[str, Any] | None = None,
@@ -30,6 +31,7 @@ async def emit(
         event = Event(
             event_type=event_type,
             user_id=user_id,
+            workspace_id=workspace_id,
             workbook_id=workbook_id,
             sheet_id=sheet_id,
             payload=payload,

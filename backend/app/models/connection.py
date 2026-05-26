@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, Uuid, LargeBinary
+from sqlalchemy import String, DateTime, Uuid, LargeBinary, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.utils import utc_now
@@ -17,6 +17,12 @@ class Connection(Base):
     __tablename__ = "connections"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     type: Mapped[str] = mapped_column(String(32), nullable=False)
     config_encrypted: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)

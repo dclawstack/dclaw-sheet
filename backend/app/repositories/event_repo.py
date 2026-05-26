@@ -16,12 +16,21 @@ class EventRepository(BaseRepository[Event]):
 
     async def list_recent(
         self,
+        *,
+        workspace_id: UUID,
         limit: int = 100,
         event_type: str | None = None,
         workbook_id: UUID | None = None,
     ) -> tuple[list[Event], int]:
-        stmt = select(Event).order_by(Event.created_at.desc()).limit(limit)
-        count_stmt = select(func.count()).select_from(Event)
+        stmt = (
+            select(Event)
+            .where(Event.workspace_id == workspace_id)
+            .order_by(Event.created_at.desc())
+            .limit(limit)
+        )
+        count_stmt = (
+            select(func.count()).select_from(Event).where(Event.workspace_id == workspace_id)
+        )
         if event_type:
             stmt = stmt.where(Event.event_type == event_type)
             count_stmt = count_stmt.where(Event.event_type == event_type)
@@ -33,36 +42,45 @@ class EventRepository(BaseRepository[Event]):
         total = (await self.db.execute(count_stmt)).scalar() or 0
         return items, total
 
-    async def total(self) -> int:
-        return (await self.db.execute(select(func.count()).select_from(Event))).scalar() or 0
+    async def total(self, *, workspace_id: UUID) -> int:
+        return (
+            await self.db.execute(
+                select(func.count())
+                .select_from(Event)
+                .where(Event.workspace_id == workspace_id)
+            )
+        ).scalar() or 0
 
-    async def count_since(self, since: datetime) -> int:
+    async def count_since(self, since: datetime, *, workspace_id: UUID) -> int:
         result = await self.db.execute(
-            select(func.count()).select_from(Event).where(Event.created_at >= since)
+            select(func.count())
+            .select_from(Event)
+            .where(Event.workspace_id == workspace_id, Event.created_at >= since)
         )
         return result.scalar() or 0
 
-    async def _events_since(self, since: datetime) -> list[Event]:
-        """Fetch raw events for in-memory bucketing — dialect-portable across
-        SQLite (no DATE_TRUNC) and Postgres (no func.date semantics parity)."""
+    async def _events_since(self, since: datetime, *, workspace_id: UUID) -> list[Event]:
         result = await self.db.execute(
-            select(Event).where(Event.created_at >= since)
+            select(Event).where(
+                Event.workspace_id == workspace_id, Event.created_at >= since
+            )
         )
         return list(result.scalars().all())
 
-    async def daily_counts(self, days: int = 7) -> list[tuple[str, int]]:
+    async def daily_counts(self, *, workspace_id: UUID, days: int = 7) -> list[tuple[str, int]]:
         since = utc_now() - timedelta(days=days)
-        events = await self._events_since(since)
+        events = await self._events_since(since, workspace_id=workspace_id)
         counts: Counter[str] = Counter(e.created_at.date().isoformat() for e in events)
-        # Fill empty days so the chart has a continuous x-axis
         for n in range(days + 1):
             day = (utc_now() - timedelta(days=days - n)).date().isoformat()
             counts.setdefault(day, 0)
         return sorted(counts.items())
 
-    async def daily_active_workbooks(self, days: int = 7) -> list[tuple[str, int]]:
+    async def daily_active_workbooks(
+        self, *, workspace_id: UUID, days: int = 7
+    ) -> list[tuple[str, int]]:
         since = utc_now() - timedelta(days=days)
-        events = await self._events_since(since)
+        events = await self._events_since(since, workspace_id=workspace_id)
         per_day: dict[str, set] = defaultdict(set)
         for e in events:
             if e.workbook_id is None:
@@ -73,11 +91,13 @@ class EventRepository(BaseRepository[Event]):
             per_day.setdefault(day, set())
         return sorted((d, len(s)) for d, s in per_day.items())
 
-    async def counts_by_type(self, days: int = 30) -> list[tuple[str, int]]:
+    async def counts_by_type(
+        self, *, workspace_id: UUID, days: int = 30
+    ) -> list[tuple[str, int]]:
         since = utc_now() - timedelta(days=days)
         result = await self.db.execute(
             select(Event.event_type, func.count())
-            .where(Event.created_at >= since)
+            .where(Event.workspace_id == workspace_id, Event.created_at >= since)
             .group_by(Event.event_type)
             .order_by(func.count().desc())
         )

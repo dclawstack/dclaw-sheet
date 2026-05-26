@@ -91,12 +91,12 @@ Goal: replace every mock with a real implementation, get a working end-to-end lo
 | 1.6 | **Chart spec + auto-recommend (Vega-Lite)** | ✅ | `services/charts.py` infers column types (quant/temporal/nominal) → bar/line/point. Frontend renders via `vega-embed` (canvas marked as a webpack fallback). |
 | 1.7 | **Live connectors v1**: Postgres + CSV-by-URL | ✅ | `services/connectors/{base,csv_url,postgres,drift}.py`. Fernet-encrypted configs. Manual refresh; scheduled deferred to 2.3. Drift report (added/removed/reordered) returned on every sync. |
 | 1.8 | **CRDT real-time collab (Yjs)** | ⏭ deferred | Pulls infra weight (WebSocket gateway + persistence); scheduled for after 1.9 per Sprint-1 ordering. |
-| 1.9 | **Auth (Logto OIDC)** | ⏭ deferred | JWT middleware + `User`/`Org`/`Workspace` scoping on every entity; needs a corresponding migration + frontend login flow. |
+| 1.9 | **Auth (Logto OIDC)** | ✅ | `Org`/`Workspace`/`User`/`Membership` models + 0004_auth migration (seeds & backfills a default workspace). `get_current_workspace` FastAPI dep with two providers: `dev` (auto-grants every request a default user — zero-config local) and `logto` (RS256 JWT verified against `LOGTO_JWKS_URL`; user upserted from `sub`/`email` claims). Workspace scoping on workbooks / sheets / cells / connections / events / copilot / charts — every list returns only the caller's workspace; foreign IDs return 404. `GET /api/v1/me` exposes user + workspace + provider. Frontend `AuthProvider` + `AuthGate` show a token-paste login screen when the API returns 401; user/workspace badge in the home header. |
 | 1.10 | **Telemetry events** | ✅ | `events` table (event_type / user_id / workbook_id / sheet_id / JSON payload / created_at) + `services/telemetry.emit()` fire-and-forget. Emitting on workbook.created/deleted, sheet.created, csv.imported, xlsx.imported, sheet.exported, chart.requested, copilot.asked, connection.{created,synced,refreshed}. `GET /api/v1/events` + `/events/summary` (total / today / daily counts / daily-active-workbooks / by-type). Frontend `/events` retention dashboard with Vega-Lite bar charts. |
 
 **Exit criteria for complexity-1:** Demo flow works end-to-end — a user logs in via Logto, imports XLSX, asks the copilot "Show me MRR by month from the Stripe connector," and gets a chart back in <10s.
 
-**Current state:** 8/10 shipped; the demo loop works without auth (`AI_PROVIDER=stub` default in CI; OpenRouter/Ollama wired and selectable via env). 1.8 (CRDT) and 1.9 (auth) are the remaining items before the exit-criteria demo is fully met.
+**Current state:** 9/10 shipped. The exit-criteria demo loop is reachable end-to-end: sign in (Logto in prod, auto-granted in dev) → import XLSX → ask the copilot → get a chart back. Only **1.8 CRDT collab** remains in Sprint 1.
 
 ---
 

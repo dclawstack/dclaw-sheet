@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Table2, Plus, Trash2, Database, Activity } from "lucide-react";
+import { Table2, Plus, Trash2, Database, Activity, LogOut, User as UserIcon } from "lucide-react";
 
 import {
   createWorkbook,
@@ -10,8 +10,10 @@ import {
   listWorkbooks,
   type Workbook,
 } from "@/lib/api";
+import { useAuth } from "@/components/auth-provider";
 
 export default function Home() {
+  const { me, signOut } = useAuth();
   const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,14 @@ export default function Home() {
           <h1 className="text-xl font-semibold text-white">DClaw Sheet</h1>
         </div>
         <div className="flex items-center gap-2">
+          {me && (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-white/80 mr-2 pr-2 border-r border-white/20">
+              <UserIcon className="h-3.5 w-3.5" />
+              <span className="font-medium">{me.user.email}</span>
+              <span className="text-white/60">·</span>
+              <span>{me.workspace.name}</span>
+            </div>
+          )}
           <Link
             href="/events"
             className="rounded-md bg-white/10 hover:bg-white/20 px-4 py-2 text-sm text-white font-medium flex items-center gap-2"
@@ -93,6 +103,15 @@ export default function Home() {
             <Plus className="h-4 w-4" />
             New workbook
           </button>
+          {me?.auth_provider !== "dev" && (
+            <button
+              onClick={signOut}
+              className="rounded-md bg-white/10 hover:bg-white/20 px-3 py-2 text-sm text-white font-medium flex items-center gap-2"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </header>
 

@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1"
     ai_provider: str = "auto"  # auto | openrouter | ollama | stub
 
+    # Auth — "dev" = auto-grant a default user; "logto" = verify JWTs via JWKS
+    auth_provider: str = "dev"
+    logto_jwks_url: str = ""
+    logto_issuer: str = ""
+    logto_audience: str = ""
+    dev_user_email: str = "dev@dclawstack.local"
+
     class Config:
         env_file = ".env"
         case_sensitive = False

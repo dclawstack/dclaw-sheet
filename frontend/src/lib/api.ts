@@ -8,11 +8,30 @@ class ApiError extends Error {
   }
 }
 
+const TOKEN_KEY = "dclaw_sheet_auth_token";
+
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(TOKEN_KEY);
+}
+
+export function setAuthToken(token: string | null) {
+  if (typeof window === "undefined") return;
+  if (token) window.localStorage.setItem(TOKEN_KEY, token);
+  else window.localStorage.removeItem(TOKEN_KEY);
+}
+
+function authHeader(): Record<string, string> {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;
   const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
+      ...authHeader(),
       ...options?.headers,
     },
     ...options,
@@ -128,7 +147,7 @@ export async function importCsv(workbookId: string, file: File, sheetName: strin
   form.append("file", file);
   form.append("sheet_name", sheetName);
   const url = `${API_BASE}/api/v1/workbooks/${workbookId}/import/csv`;
-  const response = await fetch(url, { method: "POST", body: form });
+  const response = await fetch(url, { method: "POST", body: form, headers: authHeader() });
   if (!response.ok) {
     const text = await response.text();
     throw new ApiError(`API error ${response.status}: ${text}`, response.status);
@@ -141,7 +160,7 @@ export async function importXlsx(workbookId: string, file: File, sheetName?: str
   form.append("file", file);
   if (sheetName) form.append("sheet_name", sheetName);
   const url = `${API_BASE}/api/v1/workbooks/${workbookId}/import/xlsx`;
-  const response = await fetch(url, { method: "POST", body: form });
+  const response = await fetch(url, { method: "POST", body: form, headers: authHeader() });
   if (!response.ok) {
     const text = await response.text();
     throw new ApiError(`API error ${response.status}: ${text}`, response.status);
@@ -285,6 +304,31 @@ export async function listEvents(limit = 100, eventType?: string) {
 
 export async function telemetrySummary(days = 7) {
   return fetchJson<TelemetrySummary>(`/api/v1/events/summary?days=${days}`);
+}
+
+export interface MeUser {
+  id: string;
+  email: string;
+  name: string | null;
+  external_id: string | null;
+  default_workspace_id: string | null;
+}
+
+export interface MeWorkspace {
+  id: string;
+  org_id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface MeResponse {
+  user: MeUser;
+  workspace: MeWorkspace;
+  auth_provider: string;
+}
+
+export async function getMe() {
+  return fetchJson<MeResponse>("/api/v1/me");
 }
 
 export { ApiError };
