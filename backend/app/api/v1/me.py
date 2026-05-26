@@ -13,4 +13,7 @@ async def me(scope: WorkspaceScope = Depends(get_current_workspace)):
         user=UserRead.model_validate(scope.user),
         workspace=WorkspaceRead.model_validate(scope.workspace),
         auth_provider=settings.auth_provider,
+        role=scope.role,
+        can_write=scope.can_write,
+        can_admin=scope.can_admin,
     )

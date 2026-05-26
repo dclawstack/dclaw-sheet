@@ -210,6 +210,15 @@ async def get_current_user(
 class WorkspaceScope:
     user: User
     workspace: Workspace
+    role: str = "owner"
+
+    @property
+    def can_write(self) -> bool:
+        return self.role in ("owner", "admin", "editor")
+
+    @property
+    def can_admin(self) -> bool:
+        return self.role in ("owner", "admin")
 
 
 async def get_current_workspace(
@@ -225,8 +234,37 @@ async def get_current_workspace(
         ws = (
             await db.execute(select(Workspace).where(Workspace.id == user.default_workspace_id))
         ).scalar_one()
+    # Look up the caller's role on this workspace via Membership.
+    membership = (
+        await db.execute(
+            select(Membership).where(
+                Membership.user_id == user.id,
+                Membership.workspace_id == ws.id,
+            )
+        )
+    ).scalar_one_or_none()
+    role = membership.role if membership else "viewer"
     # Stamp the actor on this session so the cell repo can populate
     # CellChange.actor_email when rows are mutated.
     from app.services.history import set_actor
     set_actor(db, user.email)
-    return WorkspaceScope(user=user, workspace=ws)
+    return WorkspaceScope(user=user, workspace=ws, role=role)
+
+
+def require_writer(scope: "WorkspaceScope" = Depends(get_current_workspace)) -> "WorkspaceScope":
+    """Dependency that 403s callers whose role can't write."""
+    if not scope.can_write:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role '{scope.role}' lacks write permission",
+        )
+    return scope
+
+
+def require_admin(scope: "WorkspaceScope" = Depends(get_current_workspace)) -> "WorkspaceScope":
+    if not scope.can_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role '{scope.role}' lacks admin permission",
+        )
+    return scope

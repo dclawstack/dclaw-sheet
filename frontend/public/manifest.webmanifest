@@ -1,0 +1,18 @@
+{
+  "name": "DClaw Sheet",
+  "short_name": "Sheet",
+  "description": "AI-powered spreadsheets for FP&A and Ops teams",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10B981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

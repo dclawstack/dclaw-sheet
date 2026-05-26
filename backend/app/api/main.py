@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.database import init_db
 from app.api.routes import health
 from app.api.v1 import (
-    workbooks, sheets, ai, connections, events, me, forecast, validation, history,
+    workbooks, sheets, ai, connections, events, me, forecast, validation, history, templates,
 )
 
 
@@ -40,3 +40,4 @@ app.include_router(me.router, prefix="/api/v1/me", tags=["me"])
 app.include_router(forecast.router, prefix="/api/v1/forecast", tags=["forecast"])
 app.include_router(validation.router, prefix="/api/v1/validation", tags=["validation"])
 app.include_router(history.router, prefix="/api/v1/history", tags=["history"])
+app.include_router(templates.router, prefix="/api/v1/templates", tags=["templates"])

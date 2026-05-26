@@ -26,3 +26,6 @@ class MeResponse(BaseModel):
     user: UserRead
     workspace: WorkspaceRead
     auth_provider: str
+    role: str
+    can_write: bool
+    can_admin: bool

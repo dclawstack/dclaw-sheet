@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import WorkspaceScope, get_current_workspace
+from app.core.auth import WorkspaceScope, get_current_workspace, require_writer
 from app.core.database import get_db
 from app.models import Workbook
 from app.repositories.workbook_repo import WorkbookRepository
@@ -40,7 +40,7 @@ async def list_workbooks(
 @router.post("", response_model=WorkbookRead, status_code=201)
 async def create_workbook(
     payload: WorkbookCreate,
-    scope: WorkspaceScope = Depends(get_current_workspace),
+    scope: WorkspaceScope = Depends(require_writer),
     db: AsyncSession = Depends(get_db),
 ):
     repo = WorkbookRepository(db)
