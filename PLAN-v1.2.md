@@ -113,7 +113,7 @@ Goal: replace every mock with a real implementation, get a working end-to-end lo
 | 2.7 | **Automation engine** | Triggers: cell-change, schedule, webhook. Actions: send email, call HTTP, write back to connector, append to sheet. Visual builder in frontend. |
 | 2.8 | **Validation rules + AI rule suggestion** | Type, range, regex, lookup-list, custom-formula. AI infers rules from existing data. |
 | 2.9 | **Mobile PWA** | Read-mostly mobile editor; offline-cache via Yjs persistence. |
-| 2.10 | **Pivot tables (OLAP)** | Drag-drop dims/measures, backed by DuckDB-WASM GROUP BY. |
+| 2.10 | **Pivot tables (OLAP)** ✅ | `PivotPanel`: click-to-assign fields to Rows / Columns (cross-tab) / Values, per-measure aggregator (SUM / AVG / COUNT / MIN / MAX). SQL built on the fly with `GROUP BY` against the in-browser DuckDB table; cross-tab pivots a single measure across unique column-dim values client-side. Shared `lib/duckdb.ts` so the SQL panel (1.4) and the pivot panel reuse the same sheet-to-DuckDB pipeline. |
 | 2.11 | **Audit log + permissions** | Cell-level read/write ACL; immutable audit trail. |
 
 **Exit criteria for complexity-2:** A new customer can connect Stripe + Salesforce, ask "build me a runway model with our actual data," and get back a fully populated, ongoingly-refreshed forecast workbook — no human SQL written.

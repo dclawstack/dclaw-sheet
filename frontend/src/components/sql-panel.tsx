@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Database, Play, X } from "lucide-react";
 
-import { listCells, type Cell } from "@/lib/api";
+import { loadDuckDBFromSheet, type DuckDBHandle } from "@/lib/duckdb";
 
 interface SqlPanelProps {
   sheetId: string;
@@ -16,146 +16,66 @@ interface QueryResult {
   durationMs: number;
 }
 
-function coerceCell(c: Cell): string | number | boolean | null {
-  if (c.value === null || c.value === "") return null;
-  if (c.data_type === "number") {
-    const n = Number(c.value);
-    return Number.isFinite(n) ? n : c.value;
-  }
-  if (c.data_type === "boolean") return c.value.toUpperCase() === "TRUE";
-  return c.value;
-}
-
-function buildRecords(cells: Cell[]): { headers: string[]; rows: Record<string, unknown>[] } {
-  if (cells.length === 0) return { headers: [], rows: [] };
-  let maxRow = 0;
-  let maxCol = 0;
-  for (const c of cells) {
-    if (c.row > maxRow) maxRow = c.row;
-    if (c.column > maxCol) maxCol = c.column;
-  }
-  const grid: (Cell | undefined)[][] = Array.from({ length: maxRow + 1 }, () => Array(maxCol + 1));
-  for (const c of cells) grid[c.row][c.column] = c;
-
-  const headerCells = grid[0];
-  const headers: string[] = [];
-  for (let c = 0; c <= maxCol; c += 1) {
-    const cell = headerCells?.[c];
-    const fallback = `col${c}`;
-    const raw = cell?.value && cell.value.trim() !== "" ? cell.value : fallback;
-    let name = raw.replace(/[^A-Za-z0-9_]/g, "_");
-    if (!/^[A-Za-z_]/.test(name)) name = `_${name}`;
-    let unique = name;
-    let suffix = 1;
-    while (headers.includes(unique)) {
-      unique = `${name}_${suffix}`;
-      suffix += 1;
-    }
-    headers.push(unique);
-  }
-
-  const rows: Record<string, unknown>[] = [];
-  for (let r = 1; r <= maxRow; r += 1) {
-    const record: Record<string, unknown> = {};
-    let any = false;
-    for (let c = 0; c <= maxCol; c += 1) {
-      const cell = grid[r]?.[c];
-      const value = cell ? coerceCell(cell) : null;
-      record[headers[c]] = value;
-      if (value !== null) any = true;
-    }
-    if (any) rows.push(record);
-  }
-  return { headers, rows };
-}
-
 export function SqlPanel({ sheetId, onClose }: SqlPanelProps) {
   const [query, setQuery] = useState("SELECT * FROM sheet LIMIT 20;");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<QueryResult | null>(null);
   const [ready, setReady] = useState(false);
-  const dbRef = useRef<unknown | null>(null);
-  const connRef = useRef<unknown | null>(null);
+  const handleRef = useRef<DuckDBHandle | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
 
-    async function init() {
+    (async () => {
       try {
-        const duckdb = await import("@duckdb/duckdb-wasm");
-        const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
-        const workerBlob = new Blob([`importScripts("${bundle.mainWorker}");`], {
-          type: "application/javascript",
-        });
-        const worker = new Worker(URL.createObjectURL(workerBlob));
-        const logger = new duckdb.ConsoleLogger();
-        const db = new duckdb.AsyncDuckDB(logger, worker);
-        await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-        const conn = await db.connect();
-        dbRef.current = db;
-        connRef.current = conn;
-
-        const cells = await listCells(sheetId);
-        const { headers, rows } = buildRecords(cells);
-        if (rows.length === 0) {
-          await conn.query(`CREATE TABLE sheet (col TEXT);`);
-        } else {
-          await db.registerFileText("sheet.json", JSON.stringify(rows));
-          await conn.query(`CREATE TABLE sheet AS SELECT * FROM read_json_auto('sheet.json');`);
+        const handle = await loadDuckDBFromSheet(sheetId);
+        handleRef.current = handle;
+        if (cancelled) {
+          await handle.terminate();
+          return;
         }
-        if (!cancelled) {
-          setReady(true);
-          // Auto-run the default query so the user sees data immediately
-          await runQuery(conn);
-        }
+        setReady(true);
+        await runQuery(query, handle);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to initialise DuckDB");
       }
-    }
-
-    init();
+    })();
 
     return () => {
       cancelled = true;
-      const conn = connRef.current as { close?: () => Promise<void> } | null;
-      const db = dbRef.current as { terminate?: () => Promise<void> } | null;
-      if (conn?.close) conn.close().catch(() => undefined);
-      if (db?.terminate) db.terminate().catch(() => undefined);
+      const handle = handleRef.current;
+      if (handle) handle.terminate().catch(() => undefined);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetId]);
 
-  async function runQuery(connOverride?: unknown) {
-    const conn = (connOverride ?? connRef.current) as {
-      query: (sql: string) => Promise<{
-        schema: { fields: { name: string }[] };
-        toArray: () => Record<string, unknown>[];
-      }>;
-    } | null;
-    if (!conn) return;
+  async function runQuery(sql: string, handleOverride?: DuckDBHandle) {
+    const handle = handleOverride ?? handleRef.current;
+    if (!handle) return;
     setBusy(true);
     setError(null);
     const started = performance.now();
     try {
-      const r = await conn.query(query);
+      const r = await handle.conn.query(sql);
       const columns = r.schema.fields.map((f) => f.name);
       const rows = r.toArray().map((row) =>
         columns.map((c) => {
           const v = row[c];
           if (v === undefined || v === null) return null;
           if (typeof v === "bigint") return Number(v);
-          if (
-            typeof v === "string" ||
-            typeof v === "number" ||
-            typeof v === "boolean"
-          )
+          if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
             return v;
+          }
           return String(v);
         }),
       );
-      setResult({ columns, rows, durationMs: Math.round(performance.now() - started) });
+      setResult({
+        columns,
+        rows,
+        durationMs: Math.round(performance.now() - started),
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Query failed");
     } finally {
@@ -194,7 +114,7 @@ export function SqlPanel({ sheetId, onClose }: SqlPanelProps) {
         />
         <div className="flex items-center justify-between">
           <button
-            onClick={() => runQuery()}
+            onClick={() => runQuery(query)}
             disabled={busy || !ready}
             className="rounded-md bg-[#10B981] px-4 py-2 text-sm text-white font-medium hover:bg-[#0E9F6E] disabled:opacity-50 flex items-center gap-1"
           >
