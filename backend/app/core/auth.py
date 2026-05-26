@@ -225,4 +225,8 @@ async def get_current_workspace(
         ws = (
             await db.execute(select(Workspace).where(Workspace.id == user.default_workspace_id))
         ).scalar_one()
+    # Stamp the actor on this session so the cell repo can populate
+    # CellChange.actor_email when rows are mutated.
+    from app.services.history import set_actor
+    set_actor(db, user.email)
     return WorkspaceScope(user=user, workspace=ws)

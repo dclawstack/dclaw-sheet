@@ -5,6 +5,8 @@ from app.models.sheet import Sheet
 from app.models.cell import Cell
 from app.models.connection import Connection
 from app.models.event import Event
+from app.models.validation_rule import ValidationRule
+from app.models.cell_change import CellChange
 
 __all__ = [
     "Base",
@@ -17,4 +19,6 @@ __all__ = [
     "Cell",
     "Connection",
     "Event",
+    "ValidationRule",
+    "CellChange",
 ]
