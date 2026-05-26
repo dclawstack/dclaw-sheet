@@ -331,4 +331,70 @@ export async function getMe() {
   return fetchJson<MeResponse>("/api/v1/me");
 }
 
+export interface ForecastPoint {
+  index: number;
+  mean: number;
+  lower_80: number;
+  upper_80: number;
+  lower_95: number;
+  upper_95: number;
+}
+
+export interface ForecastResponse {
+  column: string;
+  column_name: string | null;
+  history: number[];
+  forecast: ForecastPoint[];
+  order: [number, number, number];
+  fit_aic: number;
+}
+
+export async function forecastColumn(
+  sheetId: string,
+  column: string,
+  periods = 12,
+  skipHeader = true,
+) {
+  return fetchJson<ForecastResponse>(
+    `/api/v1/forecast/sheets/${sheetId}/forecast`,
+    {
+      method: "POST",
+      body: JSON.stringify({ column, periods, skip_header: skipHeader }),
+    },
+  );
+}
+
+export interface AnomalyPoint {
+  row: number;
+  value: number;
+  score: number;
+  is_outlier: boolean;
+}
+
+export interface AnomalyResponse {
+  column: string;
+  column_name: string | null;
+  points: AnomalyPoint[];
+  outlier_count: number;
+}
+
+export async function detectAnomalies(
+  sheetId: string,
+  column: string,
+  contamination = 0.1,
+  skipHeader = true,
+) {
+  return fetchJson<AnomalyResponse>(
+    `/api/v1/forecast/sheets/${sheetId}/anomalies`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        column,
+        contamination,
+        skip_header: skipHeader,
+      }),
+    },
+  );
+}
+
 export { ApiError };

@@ -12,6 +12,7 @@ import {
   Database,
   RefreshCw,
   Zap,
+  TrendingUp,
 } from "lucide-react";
 
 import {
@@ -33,6 +34,7 @@ import { SheetGrid } from "@/components/sheet-grid";
 import { ChartPanel } from "@/components/chart-panel";
 import { CopilotPanel } from "@/components/copilot-panel";
 import { SqlPanel } from "@/components/sql-panel";
+import { ForecastPanel } from "@/components/forecast-panel";
 
 interface PageProps {
   params: { id: string };
@@ -116,6 +118,7 @@ export default function WorkbookPage({ params }: PageProps) {
   const [showChart, setShowChart] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
   const [showSql, setShowSql] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
   const [chartRange, setChartRange] = useState<{ start: string; end: string } | undefined>(undefined);
   const [gridRefreshTick, setGridRefreshTick] = useState(0);
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -334,12 +337,26 @@ export default function WorkbookPage({ params }: PageProps) {
               {showSql ? "Hide SQL" : "SQL"}
             </button>
           )}
+
+          {activeSheetId && (
+            <button
+              onClick={() => setShowForecast((v) => !v)}
+              className={`rounded-md px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+                showForecast
+                  ? "bg-[#10B981] text-white hover:bg-[#0E9F6E]"
+                  : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <TrendingUp className="h-4 w-4" />
+              {showForecast ? "Hide forecast" : "Forecast"}
+            </button>
+          )}
         </div>
 
         {activeSheet ? (
           <div
             className={
-              showChart || showCopilot || showSql
+              showChart || showCopilot || showSql || showForecast
                 ? "grid grid-cols-1 lg:grid-cols-2 gap-4"
                 : ""
             }
@@ -373,6 +390,12 @@ export default function WorkbookPage({ params }: PageProps) {
                 <SqlPanel
                   sheetId={activeSheet.id}
                   onClose={() => setShowSql(false)}
+                />
+              )}
+              {showForecast && (
+                <ForecastPanel
+                  sheetId={activeSheet.id}
+                  onClose={() => setShowForecast(false)}
                 />
               )}
             </div>

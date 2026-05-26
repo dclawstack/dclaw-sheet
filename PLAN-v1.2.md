@@ -105,7 +105,7 @@ Goal: replace every mock with a real implementation, get a working end-to-end lo
 | # | Feature | Notes |
 |---|---------|-------|
 | 2.1 | **Agentic workflow runner** | Multi-step plans (≥3 tool calls) with checkpointing. Replans on tool-error. Persists derived sheets. Uses Temporal.io (sacred stack) or a Celery+Redis fallback if Temporal infra unavailable. |
-| 2.2 | **Forecasting & anomaly detection** | `statsmodels` SARIMAX for forecasts (12-period horizon, confidence bands). `scikit-learn` IsolationForest for outliers. |
+| 2.2 | **Forecasting & anomaly detection** ✅ | `services/forecasting.py`: SARIMAX with heuristic-picked order (1,0,0)/(1,1,0)/(1,1,1) by series length, returns 80% + 95% confidence bands. IsolationForest with **linear detrending** before fit so growing/shrinking series flag real spikes, not endpoints. API `POST /sheets/{id}/forecast` + `/anomalies`. Frontend `ForecastPanel` with column picker, periods slider, layered Vega-Lite chart (history line + forecast line + 80/95% bands) + outlier table. |
 | 2.3 | **Connectors v2** | Stripe, Salesforce, HubSpot, Google Analytics, Snowflake, BigQuery. Scheduled refresh via APScheduler/Temporal. Per-connector schema dictionary feeds copilot RAG. |
 | 2.4 | **RAG over data dictionary** | Embeddings via pgvector (sacred stack) of column names + sample values + user-supplied descriptions. Copilot retrieves dictionary fragments before generating SQL. |
 | 2.5 | **Templates marketplace + AI customization** | 200+ templates (financial model, runway, cohort retention, SaaS metrics). AI fits template to the user's connector schemas. |

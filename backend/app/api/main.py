@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.routes import health
-from app.api.v1 import workbooks, sheets, ai, connections, events, me
+from app.api.v1 import workbooks, sheets, ai, connections, events, me, forecast
 
 
 @asynccontextmanager
@@ -35,3 +35,4 @@ app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
 app.include_router(connections.router, prefix="/api/v1/connections", tags=["connections"])
 app.include_router(events.router, prefix="/api/v1/events", tags=["events"])
 app.include_router(me.router, prefix="/api/v1/me", tags=["me"])
+app.include_router(forecast.router, prefix="/api/v1/forecast", tags=["forecast"])
