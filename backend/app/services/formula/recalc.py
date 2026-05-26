@@ -83,11 +83,16 @@ def _build_graph(
 def _topo_order(
     nodes: Iterable[tuple[int, int]],
     forward: dict[tuple[int, int], set[tuple[int, int]]],
-    formula_set: set[tuple[int, int]],
 ) -> list[tuple[int, int]]:
-    """Kahn's algorithm restricted to formula nodes; non-formula deps are leaves."""
+    """Kahn's algorithm over `nodes`.
+
+    Deps outside `nodes` are leaves — their values are already seeded into
+    the evaluator's grid (either from the data cells in `_initial_grid` or
+    from previously-computed formula values seeded in `_evaluate_targets`).
+    """
     node_list = list(nodes)
-    in_deps = {n: {d for d in forward.get(n, ()) if d in formula_set} for n in node_list}
+    node_set = set(node_list)
+    in_deps = {n: {d for d in forward.get(n, ()) if d in node_set} for n in node_list}
     in_degree: dict[tuple[int, int], int] = {n: len(in_deps[n]) for n in node_list}
     rev_within: dict[tuple[int, int], set[tuple[int, int]]] = defaultdict(set)
     for n in node_list:
@@ -126,7 +131,7 @@ async def _evaluate_targets(
     seed_grid: dict[tuple[int, int], object],
 ) -> list[Cell]:
     formula_set = set(formula_cells.keys())
-    order = _topo_order(targets, forward, formula_set)
+    order = _topo_order(targets, forward)
     cyclic = set(targets) - set(order)
     for coord in cyclic:
         formula_cells[coord].value = "#CIRC!"
