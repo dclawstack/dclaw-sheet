@@ -40,7 +40,7 @@ async def test_create_list_get_delete_connection(client):
 async def test_create_connection_rejects_unknown_type(client):
     resp = await client.post(
         "/api/v1/connections",
-        json={"name": "x", "type": "snowflake", "config": {"url": "x"}},
+        json={"name": "x", "type": "redshift", "config": {"url": "x"}},
     )
     # Pydantic literal validation rejects with 422 before reaching the handler
     assert resp.status_code in (400, 422)

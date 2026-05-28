@@ -23,7 +23,9 @@
     "tailwindcss-animate": "^1.0.7",
     "vega": "^6.2.0",
     "vega-embed": "^7.1.0",
-    "vega-lite": "^6.4.3"
+    "vega-lite": "^6.4.3",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.30"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

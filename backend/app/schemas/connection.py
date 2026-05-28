@@ -4,7 +4,16 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
-ConnectionType = Literal["postgres", "csv_url"]
+ConnectionType = Literal[
+    "postgres",
+    "csv_url",
+    "stripe",
+    "salesforce",
+    "hubspot",
+    "google_analytics",
+    "snowflake",
+    "bigquery",
+]
 
 
 class ConnectionCreate(BaseModel):

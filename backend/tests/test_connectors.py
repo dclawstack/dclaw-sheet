@@ -65,4 +65,4 @@ async def test_csv_url_connector(monkeypatch):
 @pytest.mark.asyncio
 async def test_unknown_connector_type_raises():
     with pytest.raises(ValueError):
-        build_connector("snowflake", {"url": "x"})
+        build_connector("redshift", {"url": "x"})

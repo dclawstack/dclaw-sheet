@@ -8,6 +8,7 @@ from app.models.event import Event
 from app.models.validation_rule import ValidationRule
 from app.models.cell_change import CellChange
 from app.models.automation import Automation
+from app.models.plan import Plan, PlanStep
 
 __all__ = [
     "Base",
@@ -23,4 +24,6 @@ __all__ = [
     "ValidationRule",
     "CellChange",
     "Automation",
+    "Plan",
+    "PlanStep",
 ]

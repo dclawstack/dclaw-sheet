@@ -37,6 +37,8 @@ import { CopilotPanel } from "@/components/copilot-panel";
 import { SqlPanel } from "@/components/sql-panel";
 import { ForecastPanel } from "@/components/forecast-panel";
 import { PivotPanel } from "@/components/pivot-panel";
+import { CollabIndicator } from "@/components/collab-indicator";
+import { useAuth } from "@/components/auth-provider";
 
 interface PageProps {
   params: { id: string };
@@ -44,6 +46,7 @@ interface PageProps {
 
 export default function WorkbookPage({ params }: PageProps) {
   const { id } = params;
+  const { me } = useAuth();
   const [workbook, setWorkbook] = useState<Workbook | null>(null);
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
@@ -170,13 +173,18 @@ export default function WorkbookPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-[#10B981] px-6 py-4 flex items-center gap-3">
-        <Link href="/" className="text-white/80 hover:text-white">
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="text-xl font-semibold text-white">
-          {workbook?.name ?? "Loading…"}
-        </h1>
+      <header className="bg-[#10B981] px-6 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-white/80 hover:text-white">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="text-xl font-semibold text-white">
+            {workbook?.name ?? "Loading…"}
+          </h1>
+        </div>
+        {activeSheet && me && (
+          <CollabIndicator sheetId={activeSheet.id} email={me.user.email} />
+        )}
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-6">
