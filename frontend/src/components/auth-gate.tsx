@@ -2,11 +2,28 @@
 
 import { useState } from "react";
 import { LogIn, Table2 } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 
+// Routes that don't need auth — keep this list narrow.
+const PUBLIC_PREFIXES = ["/", "/about", "/pricing"];
+
+function isPublicRoute(pathname: string): boolean {
+  if (pathname === "/") return true;
+  return PUBLIC_PREFIXES.some((p) => p !== "/" && pathname.startsWith(p));
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const { me, loading, needsLogin, error, signIn } = useAuth();
+
+  if (isPublicRoute(pathname)) {
+    // Public pages always render — auth status is still loaded in the
+    // background so the landing page can show "Open app" → /app when
+    // the user already has a session.
+    return <>{children}</>;
+  }
   const [token, setToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [signinError, setSigninError] = useState<string | null>(null);
