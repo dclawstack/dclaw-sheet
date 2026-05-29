@@ -74,7 +74,7 @@ export default function EventsPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-[#10B981] px-6 py-4 flex items-center gap-3">
-        <Link href="/" className="text-white/80 hover:text-white">
+        <Link href="/workbooks" className="text-white/80 hover:text-white">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <Activity className="h-5 w-5 text-white" />

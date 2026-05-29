@@ -1,0 +1,25 @@
+# Cloud / production overrides. Use with:
+#   helm install dclaw-sheet ./helm -n <ns> -f values-prod.yaml
+image:
+  backend:
+    repository: ghcr.io/dclawstack/dclaw-sheet-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: ghcr.io/dclawstack/dclaw-sheet-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+service:
+  frontend:
+    type: ClusterIP
+    port: 3020
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  host: sheet.dclawstack.io
+  tls:
+    - secretName: dclaw-sheet-tls
+      hosts:
+        - sheet.dclawstack.io

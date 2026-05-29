@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     logto_audience: str = ""
     dev_user_email: str = "dev@dclawstack.local"
 
+    # Demo seed/reset for the landing page. Gate the seed/reset endpoints.
+    enable_demo_mode: bool = False
+    demo_user_email: str = "demo@dclawstack.io"
+    demo_user_name: str = "Demo User"
+
     class Config:
         env_file = ".env"
         case_sensitive = False

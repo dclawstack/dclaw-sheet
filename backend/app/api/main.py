@@ -8,6 +8,7 @@ from app.api.routes import health
 from app.api.v1 import (
     workbooks, sheets, ai, connections, events, me, forecast,
     validation, history, templates, rag, automations, plans, collab,
+    demo,
 )
 
 
@@ -46,3 +47,4 @@ app.include_router(rag.router, prefix="/api/v1/rag", tags=["rag"])
 app.include_router(automations.router, prefix="/api/v1/automations", tags=["automations"])
 app.include_router(plans.router, prefix="/api/v1/plans", tags=["plans"])
 app.include_router(collab.router, prefix="/api/v1/collab", tags=["collab"])
+app.include_router(demo.router, prefix="/api/v1", tags=["demo"])

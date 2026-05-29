@@ -397,4 +397,31 @@ export async function detectAnomalies(
   );
 }
 
+// ── Demo seed/clear (landing page) ──────────────────────────────────────
+export interface DemoCredentials {
+  email: string;
+  name: string;
+  note: string;
+}
+
+export interface DemoStatus {
+  enabled: boolean;
+  seeded: boolean;
+  workspace_id: string | null;
+  counts: Record<string, number>;
+  credentials: DemoCredentials | null;
+}
+
+export async function demoStatus() {
+  return fetchJson<DemoStatus>("/api/v1/demo/status");
+}
+
+export async function demoSeed() {
+  return fetchJson<DemoStatus>("/api/v1/demo/seed", { method: "POST" });
+}
+
+export async function demoReset() {
+  return fetchJson<DemoStatus>("/api/v1/demo/reset", { method: "DELETE" });
+}
+
 export { ApiError };
