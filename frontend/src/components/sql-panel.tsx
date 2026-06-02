@@ -94,12 +94,12 @@ export function SqlPanel({ sheetId, onClose }: SqlPanelProps) {
         <div className="flex items-center gap-2">
           <Database className="h-4 w-4 text-[#10B981]" />
           <h3 className="font-semibold text-gray-900">SQL panel</h3>
-          <span className="text-[10px] uppercase tracking-wider text-gray-400">
+          <span className="text-[10px] uppercase tracking-wider text-gray-600">
             DuckDB-WASM
           </span>
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} aria-label="Close" className="text-gray-600 hover:text-gray-700">
             <X className="h-4 w-4" />
           </button>
         )}
@@ -107,6 +107,7 @@ export function SqlPanel({ sheetId, onClose }: SqlPanelProps) {
 
       <div className="p-4 space-y-3">
         <textarea
+          aria-label="SQL query"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
@@ -154,7 +155,7 @@ export function SqlPanel({ sheetId, onClose }: SqlPanelProps) {
                 <tr key={idx} className="even:bg-gray-50">
                   {row.map((v, c) => (
                     <td key={c} className="px-3 py-1.5 border-b border-gray-100 truncate">
-                      {v === null ? <span className="text-gray-300">·</span> : String(v)}
+                      {v === null ? <span className="text-gray-600">·</span> : String(v)}
                     </td>
                   ))}
                 </tr>

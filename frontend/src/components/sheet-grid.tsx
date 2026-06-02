@@ -121,6 +121,7 @@ export function SheetGrid({ sheetId, rowCount, columnCount }: SheetGridProps) {
                       {isEditing ? (
                         <input
                           autoFocus
+                          aria-label="Cell value"
                           className="w-full h-8 px-2 outline-none border-2 border-[#10B981] font-mono"
                           value={draft}
                           onChange={(e) => setDraft(e.target.value)}

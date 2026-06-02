@@ -154,7 +154,7 @@ export default function AppHome() {
                   {wb.description && (
                     <p className="text-sm text-gray-600 line-clamp-2">{wb.description}</p>
                   )}
-                  <p className="mt-3 text-xs text-gray-400">
+                  <p className="mt-3 text-xs text-gray-600">
                     Updated {new Date(wb.updated_at).toLocaleString()}
                   </p>
                 </Link>
@@ -184,6 +184,7 @@ export default function AppHome() {
             <input
               autoFocus
               type="text"
+              aria-label="Name"
               className="w-full rounded-md border border-gray-300 p-2 mb-3 text-sm focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] outline-none"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -192,6 +193,7 @@ export default function AppHome() {
             />
             <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
             <textarea
+              aria-label="Description (optional)"
               className="w-full rounded-md border border-gray-300 p-2 mb-4 text-sm focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] outline-none resize-none"
               rows={3}
               value={newDescription}

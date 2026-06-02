@@ -94,7 +94,7 @@ export function CopilotPanel({ sheetId, onClose, onMutated, onChartRequest }: Co
           <h3 className="font-semibold text-gray-900">Sheet Copilot</h3>
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} aria-label="Close" className="text-gray-600 hover:text-gray-700">
             <X className="h-4 w-4" />
           </button>
         )}
@@ -129,7 +129,7 @@ export function CopilotPanel({ sheetId, onClose, onMutated, onChartRequest }: Co
                       <div className="font-mono text-xs text-gray-600 mb-1">
                         {call.tool}
                         {call.tool === "write_formula" && (
-                          <span className="ml-2 text-gray-400">
+                          <span className="ml-2 text-gray-600">
                             row {String(call.row)}, col {String(call.column)}
                           </span>
                         )}
@@ -172,6 +172,7 @@ export function CopilotPanel({ sheetId, onClose, onMutated, onChartRequest }: Co
 
       <div className="border-t border-gray-100 p-3 flex gap-2">
         <input
+          aria-label="Ask the copilot"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={(e) => {

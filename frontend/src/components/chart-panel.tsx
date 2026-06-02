@@ -48,7 +48,7 @@ export function ChartPanel({ sheetId, defaultRange, onClose }: ChartPanelProps) 
           <h3 className="font-semibold text-gray-900">Auto chart</h3>
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} aria-label="Close" className="text-gray-600 hover:text-gray-700">
             <X className="h-4 w-4" />
           </button>
         )}
@@ -57,6 +57,7 @@ export function ChartPanel({ sheetId, defaultRange, onClose }: ChartPanelProps) 
         <label className="flex flex-col">
           <span className="text-xs text-gray-500">Start</span>
           <input
+            aria-label="Start cell"
             value={start}
             onChange={(e) => setStart(e.target.value.toUpperCase())}
             className="border border-gray-300 rounded px-2 py-1"
@@ -65,6 +66,7 @@ export function ChartPanel({ sheetId, defaultRange, onClose }: ChartPanelProps) 
         <label className="flex flex-col">
           <span className="text-xs text-gray-500">End</span>
           <input
+            aria-label="End cell"
             value={end}
             onChange={(e) => setEnd(e.target.value.toUpperCase())}
             className="border border-gray-300 rounded px-2 py-1"
@@ -73,6 +75,7 @@ export function ChartPanel({ sheetId, defaultRange, onClose }: ChartPanelProps) 
         <label className="flex items-center gap-2 text-xs text-gray-700">
           <input
             type="checkbox"
+            aria-label="First row is header"
             checked={hasHeader}
             onChange={(e) => setHasHeader(e.target.checked)}
           />
