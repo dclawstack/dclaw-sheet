@@ -64,6 +64,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             }}
           >
             <textarea
+              aria-label="Access token"
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="eyJhbGciOi…"

@@ -49,6 +49,9 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/dclaw_sheet_test
         run: python -m pytest -v --tb=short
+      - name: Type check
+        working-directory: ./backend
+        run: pip install mypy && mypy app --ignore-missing-imports || true
 
   frontend-build:
     runs-on: ubuntu-latest

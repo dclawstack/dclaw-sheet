@@ -1,15 +1,32 @@
+import os
+import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+
+import sentry_sdk
+import structlog
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
+from starlette.middleware.gzip import GZipMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db
+from app.core.logging import configure_logging, get_logger
 from app.api.routes import health
 from app.api.v1 import (
     workbooks, sheets, ai, connections, events, me, forecast,
     validation, history, templates, rag, automations, plans, collab,
     demo,
 )
+
+configure_logging()
+logger = get_logger()
+
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], traces_sample_rate=0.1)
 
 
 @asynccontextmanager
@@ -23,6 +40,33 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+
+@app.middleware("http")
+async def add_request_id(request, call_next):
+    rid = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    structlog.contextvars.bind_contextvars(request_id=rid)
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = rid
+    logger.info(
+        "request",
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+    )
+    return response
+
+
+@app.get("/health")
+async def health_root(response: Response):
+    response.headers["Cache-Control"] = "public, max-age=30"
+    return {"status": "ok"}
 
 app.add_middleware(
     CORSMiddleware,

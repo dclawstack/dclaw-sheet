@@ -239,12 +239,12 @@ export function PivotPanel({ sheetId, onClose }: PivotPanelProps) {
         <div className="flex items-center gap-2">
           <Table2 className="h-4 w-4 text-[#10B981]" />
           <h3 className="font-semibold text-gray-900">Pivot</h3>
-          <span className="text-[10px] uppercase tracking-wider text-gray-400">
+          <span className="text-[10px] uppercase tracking-wider text-gray-600">
             OLAP · DuckDB
           </span>
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} aria-label="Close" className="text-gray-600 hover:text-gray-700">
             <X className="h-4 w-4" />
           </button>
         )}
@@ -261,7 +261,7 @@ export function PivotPanel({ sheetId, onClose }: PivotPanelProps) {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {available.length === 0 ? (
-                <span className="text-xs text-gray-400">all assigned</span>
+                <span className="text-xs text-gray-600">all assigned</span>
               ) : (
                 available.map((h) => (
                   <div key={h} className="flex items-center gap-1">
@@ -300,14 +300,15 @@ export function PivotPanel({ sheetId, onClose }: PivotPanelProps) {
                   Rows
                 </div>
                 {rows.length === 0 ? (
-                  <div className="text-xs text-gray-400 italic">drop fields</div>
+                  <div className="text-xs text-gray-600 italic">drop fields</div>
                 ) : (
                   rows.map((r) => (
                     <div key={r} className="flex items-center justify-between text-xs py-0.5">
                       <span className="font-mono">{r}</span>
                       <button
                         onClick={() => removeRow(r)}
-                        className="text-gray-400 hover:text-red-600"
+                        aria-label="Remove row field"
+                        className="text-gray-600 hover:text-red-600"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -320,13 +321,14 @@ export function PivotPanel({ sheetId, onClose }: PivotPanelProps) {
                   Columns (cross-tab)
                 </div>
                 {!colDim ? (
-                  <div className="text-xs text-gray-400 italic">optional</div>
+                  <div className="text-xs text-gray-600 italic">optional</div>
                 ) : (
                   <div className="flex items-center justify-between text-xs py-0.5">
                     <span className="font-mono">{colDim}</span>
                     <button
                       onClick={() => setColDim(null)}
-                      className="text-gray-400 hover:text-red-600"
+                      aria-label="Remove column field"
+                      className="text-gray-600 hover:text-red-600"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -338,13 +340,14 @@ export function PivotPanel({ sheetId, onClose }: PivotPanelProps) {
                   Values
                 </div>
                 {measures.length === 0 ? (
-                  <div className="text-xs text-gray-400 italic">add measures</div>
+                  <div className="text-xs text-gray-600 italic">add measures</div>
                 ) : (
                   measures.map((m, i) => (
                     <div key={`${m.field}-${i}`} className="flex items-center gap-1 text-xs py-0.5">
                       <select
                         value={m.fn}
                         onChange={(e) => setMeasureFn(i, e.target.value as AggFn)}
+                        aria-label="Aggregate function"
                         className="border border-gray-300 rounded px-1 text-xs"
                       >
                         {AGG_FNS.map((fn) => (
@@ -356,7 +359,8 @@ export function PivotPanel({ sheetId, onClose }: PivotPanelProps) {
                       <span className="font-mono flex-1 truncate">{m.field}</span>
                       <button
                         onClick={() => removeMeasure(i)}
-                        className="text-gray-400 hover:text-red-600"
+                        aria-label="Remove measure"
+                        className="text-gray-600 hover:text-red-600"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -421,7 +425,7 @@ export function PivotPanel({ sheetId, onClose }: PivotPanelProps) {
                 <tr>
                   <th
                     colSpan={result.rowDims.length}
-                    className="px-3 py-1 text-right text-[10px] text-gray-400 uppercase tracking-wider border-b border-gray-200"
+                    className="px-3 py-1 text-right text-[10px] text-gray-600 uppercase tracking-wider border-b border-gray-200"
                   >
                     {result.measureLabels[0]}
                   </th>
@@ -444,7 +448,7 @@ export function PivotPanel({ sheetId, onClose }: PivotPanelProps) {
                         }`}
                       >
                         {v === null ? (
-                          <span className="text-gray-300">·</span>
+                          <span className="text-gray-600">·</span>
                         ) : typeof v === "number" ? (
                           Number.isInteger(v) ? v : v.toFixed(2)
                         ) : (

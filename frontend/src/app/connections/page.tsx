@@ -151,7 +151,7 @@ export default function ConnectionsPage() {
                     <td className="px-2">
                       <button
                         onClick={() => handleDelete(c.id)}
-                        className="text-gray-400 hover:text-red-600 p-2"
+                        className="text-gray-600 hover:text-red-600 p-2"
                         title="Delete connection"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -171,12 +171,13 @@ export default function ConnectionsPage() {
             onSubmit={handleCreate}
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg mx-4"
           >
-            <h3 className="text-lg font-semibold mb-4">New connection</h3>
+            <h2 className="text-lg font-semibold mb-4">New connection</h2>
 
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
             <input
               autoFocus
               type="text"
+              aria-label="Name"
               className="w-full rounded-md border border-gray-300 p-2 mb-3 text-sm focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] outline-none"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -207,6 +208,7 @@ export default function ConnectionsPage() {
             </label>
             <input
               type="text"
+              aria-label={type === "postgres" ? "Database URL" : "CSV URL"}
               className="w-full rounded-md border border-gray-300 p-2 mb-3 text-sm font-mono focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] outline-none"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -222,6 +224,7 @@ export default function ConnectionsPage() {
               <>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Query</label>
                 <textarea
+                  aria-label="Query"
                   className="w-full rounded-md border border-gray-300 p-2 mb-3 text-sm font-mono focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] outline-none resize-none"
                   rows={3}
                   value={query}
@@ -234,6 +237,7 @@ export default function ConnectionsPage() {
               <label className="flex items-center gap-2 text-sm text-gray-700 mb-3">
                 <input
                   type="checkbox"
+                  aria-label="First row is header"
                   checked={hasHeader}
                   onChange={(e) => setHasHeader(e.target.checked)}
                 />

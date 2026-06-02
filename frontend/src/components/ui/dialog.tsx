@@ -4,8 +4,22 @@ import { cn } from "@/lib/utils"
 const Dialog = ({ children, open, onOpenChange }: { children: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) => {
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => onOpenChange?.(false)}>
-      <div className="relative bg-background rounded-lg shadow-lg max-w-lg w-full mx-4" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="button"
+      tabIndex={0}
+      aria-label="Close"
+      onClick={() => onOpenChange?.(false)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onOpenChange?.(false)
+      }}
+    >
+      <div
+        className="relative bg-background rounded-lg shadow-lg max-w-lg w-full mx-4"
+        role="presentation"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+      >
         {children}
       </div>
     </div>

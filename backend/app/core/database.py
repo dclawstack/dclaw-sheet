@@ -5,6 +5,8 @@ from app.models.base import Base
 engine = create_async_engine(
     settings.database_url,
     echo=settings.app_env == "dev",
+    pool_size=10,
+    max_overflow=20,
     pool_pre_ping=True,
 )
 

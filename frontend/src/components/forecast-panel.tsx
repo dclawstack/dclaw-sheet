@@ -143,12 +143,12 @@ export function ForecastPanel({ sheetId, onClose }: ForecastPanelProps) {
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-[#10B981]" />
           <h3 className="font-semibold text-gray-900">Forecast</h3>
-          <span className="text-[10px] uppercase tracking-wider text-gray-400">
+          <span className="text-[10px] uppercase tracking-wider text-gray-600">
             SARIMAX
           </span>
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} aria-label="Close" className="text-gray-600 hover:text-gray-700">
             <X className="h-4 w-4" />
           </button>
         )}
@@ -159,6 +159,7 @@ export function ForecastPanel({ sheetId, onClose }: ForecastPanelProps) {
           <label className="flex flex-col">
             <span className="text-xs text-gray-500">Column</span>
             <input
+              aria-label="Column"
               value={column}
               onChange={(e) => setColumn(e.target.value.toUpperCase())}
               className="border border-gray-300 rounded px-2 py-1 font-mono"
@@ -168,6 +169,7 @@ export function ForecastPanel({ sheetId, onClose }: ForecastPanelProps) {
             <span className="text-xs text-gray-500">Periods ahead: {periods}</span>
             <input
               type="range"
+              aria-label="Periods ahead"
               min={1}
               max={36}
               value={periods}
@@ -177,6 +179,7 @@ export function ForecastPanel({ sheetId, onClose }: ForecastPanelProps) {
           <label className="flex items-center gap-2 text-xs text-gray-700">
             <input
               type="checkbox"
+              aria-label="Skip header"
               checked={skipHeader}
               onChange={(e) => setSkipHeader(e.target.checked)}
             />

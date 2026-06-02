@@ -360,7 +360,7 @@ function Features() {
                   {f.icon}
                 </div>
                 {f.badge && (
-                  <span className="text-[10px] font-mono text-gray-400">{f.badge}</span>
+                  <span className="text-[10px] font-mono text-gray-600">{f.badge}</span>
                 )}
               </div>
               <h3 className="mt-4 font-semibold text-gray-900">{f.title}</h3>

@@ -240,6 +240,7 @@ export default function WorkbookPage({ params }: PageProps) {
             Import CSV
             <input
               type="file"
+              aria-label="Import CSV"
               accept=".csv,text/csv"
               className="hidden"
               onChange={handleCsvUpload}
@@ -252,6 +253,7 @@ export default function WorkbookPage({ params }: PageProps) {
             Import XLSX
             <input
               type="file"
+              aria-label="Import XLSX"
               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               className="hidden"
               onChange={handleXlsxUpload}
@@ -273,6 +275,7 @@ export default function WorkbookPage({ params }: PageProps) {
           {connections.length > 0 && (
             <div className="relative">
               <select
+                aria-label="Sync from connection"
                 onChange={(e) => {
                   if (e.target.value) {
                     handleSyncConnection(e.target.value);
