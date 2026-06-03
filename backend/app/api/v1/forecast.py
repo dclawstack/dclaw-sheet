@@ -81,7 +81,6 @@ async def forecast(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     await emit(
-        db,
         "forecast.requested",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -135,7 +134,6 @@ async def anomalies(
     ]
     outliers = sum(1 for p in response_points if p.is_outlier)
     await emit(
-        db,
         "anomalies.requested",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

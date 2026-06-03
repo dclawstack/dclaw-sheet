@@ -74,7 +74,6 @@ async def create_rule(
     await db.commit()
     await db.refresh(rule)
     await emit(
-        db,
         "validation.rule_added",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

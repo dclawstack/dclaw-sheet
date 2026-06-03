@@ -42,7 +42,6 @@ async def run_automation(
         try:
             if action_type == "emit_event":
                 await emit(
-                    db,
                     config.get("event_type", "automation.fired"),
                     workspace_id=workspace_id,
                     user_id=actor_email,
@@ -100,7 +99,6 @@ async def run_automation(
     automation.last_fired_at = utc_now()
     await db.commit()
     await emit(
-        db,
         "automation.fired",
         workspace_id=workspace_id,
         user_id=actor_email,

@@ -67,7 +67,6 @@ async def run_endpoint(
         raise HTTPException(status_code=404, detail="Plan not found")
     plan = await run_plan(db, plan)
     await emit(
-        db,
         "plan.executed",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

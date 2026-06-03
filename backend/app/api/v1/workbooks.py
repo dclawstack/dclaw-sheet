@@ -51,7 +51,6 @@ async def create_workbook(
     )
     workbook = await repo.create(workbook)
     await emit(
-        db,
         "workbook.created",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -101,7 +100,6 @@ async def delete_workbook(
     name = workbook.name
     await repo.delete(workbook)
     await emit(
-        db,
         "workbook.deleted",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -139,7 +137,6 @@ async def import_csv_to_workbook(
     sheet = await import_csv(db, workbook_id, sheet_name, csv_bytes)
     await recalc_sheet(db, sheet.id)
     await emit(
-        db,
         "csv.imported",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -171,7 +168,6 @@ async def import_xlsx_to_workbook(
     for s in sheets:
         await recalc_sheet(db, s.id)
     await emit(
-        db,
         "xlsx.imported",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
