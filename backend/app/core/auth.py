@@ -16,6 +16,7 @@ uses to filter by workspace_id.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -32,7 +33,9 @@ from app.models import Membership, Org, User, Workspace
 
 log = logging.getLogger(__name__)
 
-_JWKS_CACHE: dict[str, dict[str, Any]] = {}
+# url -> (fetched_at_monotonic, jwks). Entries expire after
+# settings.jwks_cache_ttl_seconds so rotated IdP signing keys are picked up.
+_JWKS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -117,29 +120,37 @@ async def _ensure_membership(
 # ---------------------------------------------------------------------------
 
 
-async def _fetch_jwks(url: str) -> dict[str, Any]:
+async def _fetch_jwks(url: str, *, force: bool = False) -> dict[str, Any]:
     cached = _JWKS_CACHE.get(url)
-    if cached is not None:
-        return cached
+    if (
+        not force
+        and cached is not None
+        and (time.monotonic() - cached[0]) < settings.jwks_cache_ttl_seconds
+    ):
+        return cached[1]
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(url)
             r.raise_for_status()
         jwks = r.json()
     except httpx.HTTPError as exc:
+        # On a refresh failure, fall back to a still-cached set if we have one
+        # rather than failing auth outright.
+        if cached is not None:
+            return cached[1]
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"JWKS unreachable: {exc}",
         )
-    _JWKS_CACHE[url] = jwks
+    _JWKS_CACHE[url] = (time.monotonic(), jwks)
     return jwks
 
 
-def _select_signing_key(jwks: dict[str, Any], kid: str | None) -> Any:
+def _find_signing_key(jwks: dict[str, Any], kid: str | None) -> Any | None:
     for key in jwks.get("keys", []):
         if kid is None or key.get("kid") == kid:
             return jwt.algorithms.RSAAlgorithm.from_jwk(key)
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="JWKS kid mismatch")
+    return None
 
 
 async def _verify_logto_jwt(token: str) -> dict[str, Any]:
@@ -148,12 +159,22 @@ async def _verify_logto_jwt(token: str) -> dict[str, Any]:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="LOGTO_JWKS_URL not configured",
         )
-    jwks = await _fetch_jwks(settings.logto_jwks_url)
     try:
         unverified = jwt.get_unverified_header(token)
     except jwt.PyJWTError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
-    key = _select_signing_key(jwks, unverified.get("kid"))
+    kid = unverified.get("kid")
+    jwks = await _fetch_jwks(settings.logto_jwks_url)
+    key = _find_signing_key(jwks, kid)
+    if key is None:
+        # kid not in the cached set — the IdP may have rotated keys. Force a
+        # single re-fetch before giving up.
+        jwks = await _fetch_jwks(settings.logto_jwks_url, force=True)
+        key = _find_signing_key(jwks, kid)
+    if key is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="JWKS kid mismatch"
+        )
     try:
         claims = jwt.decode(
             token,

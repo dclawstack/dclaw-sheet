@@ -55,7 +55,6 @@ async def create_sheet(
     )
     sheet = await repo.create(sheet)
     await emit(
-        db,
         "sheet.created",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -157,7 +156,6 @@ async def export_xlsx(
     sheet = await _resolve_sheet(sheet_id, scope, db)
     xlsx_bytes = await export_sheet_xlsx(db, sheet_id)
     await emit(
-        db,
         "sheet.exported",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -188,7 +186,6 @@ async def chart_recommendation(
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Invalid range: {exc}")
     await emit(
-        db,
         "chart.requested",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

@@ -38,7 +38,6 @@ async def copilot(
     sheet = await _scoped_sheet(sheet_id, scope, db)
     resp = await answer(db, sheet_id, payload.prompt)
     await emit(
-        db,
         "copilot.asked",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -72,7 +71,6 @@ async def copilot_stream(
     sheet = await _scoped_sheet(sheet_id, scope, db)
     resp = await answer(db, sheet_id, payload.prompt)
     await emit(
-        db,
         "copilot.asked",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

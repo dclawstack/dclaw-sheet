@@ -53,7 +53,6 @@ async def create_connection(
     )
     conn = await ConnectionRepository(db).create(conn)
     await emit(
-        db,
         "connection.created",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -108,7 +107,6 @@ async def sync_into_workbook_endpoint(
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Connector fetch failed: {exc}")
     await emit(
-        db,
         "connection.synced",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -143,7 +141,6 @@ async def refresh_sheet(
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Connector fetch failed: {exc}")
     await emit(
-        db,
         "connection.refreshed",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

@@ -54,7 +54,6 @@ async def branch(
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     await emit(
-        db,
         "workbook.branched",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

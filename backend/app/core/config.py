@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     logto_jwks_url: str = ""
     logto_issuer: str = ""
     logto_audience: str = ""
+    jwks_cache_ttl_seconds: int = 3600
     dev_user_email: str = "dev@dclawstack.local"
 
     class Config:

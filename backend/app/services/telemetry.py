@@ -1,8 +1,9 @@
 """Fire-and-forget telemetry emission.
 
 emit() never raises — telemetry failures must not cascade into user-facing
-errors. It always opens and closes its own commit window so callers don't
-have to worry about transaction state.
+errors. It opens its OWN AsyncSession and commit window so it never touches
+the caller's request-scoped transaction (no commit/rollback on a shared
+session, which could persist or discard the caller's half-finished work).
 """
 from __future__ import annotations
 
@@ -12,13 +13,13 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import engine
 from app.models import Event
 
 log = logging.getLogger(__name__)
 
 
 async def emit(
-    db: AsyncSession,
     event_type: str,
     *,
     user_id: str | None = None,
@@ -28,19 +29,16 @@ async def emit(
     payload: dict[str, Any] | None = None,
 ) -> None:
     try:
-        event = Event(
-            event_type=event_type,
-            user_id=user_id,
-            workspace_id=workspace_id,
-            workbook_id=workbook_id,
-            sheet_id=sheet_id,
-            payload=payload,
-        )
-        db.add(event)
-        await db.commit()
+        async with AsyncSession(engine, expire_on_commit=False) as session:
+            event = Event(
+                event_type=event_type,
+                user_id=user_id,
+                workspace_id=workspace_id,
+                workbook_id=workbook_id,
+                sheet_id=sheet_id,
+                payload=payload,
+            )
+            session.add(event)
+            await session.commit()
     except Exception as exc:
         log.warning("telemetry emit failed (%s): %s", event_type, exc)
-        try:
-            await db.rollback()
-        except Exception:
-            pass
