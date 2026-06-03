@@ -1,3 +1,4 @@
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -164,10 +165,16 @@ async def export_xlsx(
         payload={"bytes": len(xlsx_bytes)},
     )
     safe_name = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in sheet.name) or "sheet"
+    encoded_name = quote(sheet.name.replace("\r", "").replace("\n", "")) or "sheet"
     return Response(
         content=xlsx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{safe_name}.xlsx"'},
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{safe_name}.xlsx"; '
+                f"filename*=UTF-8''{encoded_name}.xlsx"
+            )
+        },
     )
 
 
