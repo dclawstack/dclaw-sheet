@@ -40,7 +40,7 @@ async def _column_values(
     sheet_id: UUID,
     column_letter: str,
     skip_header: bool,
-) -> tuple[int, str | None, list]:
+) -> tuple[int, str | None, list, list[int]]:
     try:
         col_idx = col_letters_to_index(column_letter.upper())
     except Exception:
@@ -62,7 +62,10 @@ async def _column_values(
         header_name = by_row.get(0)
         rows_sorted = [r for r in rows_sorted if r != 0]
     values = [by_row[r] for r in rows_sorted]
-    return col_idx, header_name, values
+    # rows_sorted is parallel to values: rows_sorted[i] is the original sheet
+    # row number of values[i], so callers can map positional indexes (e.g.
+    # anomaly indexes) back to real sheet rows even when rows are non-contiguous.
+    return col_idx, header_name, values, rows_sorted
 
 
 @router.post("/sheets/{sheet_id}/forecast", response_model=ForecastResponse)
@@ -73,7 +76,7 @@ async def forecast(
     db: AsyncSession = Depends(get_db),
 ):
     sheet = await _scoped_sheet(sheet_id, scope, db)
-    _col_idx, column_name, values = await _column_values(
+    _col_idx, column_name, values, _rows = await _column_values(
         db, sheet_id, payload.column, payload.skip_header
     )
     try:
@@ -111,7 +114,7 @@ async def anomalies(
     db: AsyncSession = Depends(get_db),
 ):
     sheet = await _scoped_sheet(sheet_id, scope, db)
-    _col_idx, column_name, values = await _column_values(
+    _col_idx, column_name, values, row_numbers = await _column_values(
         db, sheet_id, payload.column, payload.skip_header
     )
     try:
@@ -121,11 +124,12 @@ async def anomalies(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    # Map positional index back to sheet row number (account for header skip)
-    row_offset = 1 if payload.skip_header else 0
+    # Map each anomaly's positional index back to its original sheet row via
+    # row_numbers (parallel to values), so gaps/blanks/non-zero start rows are
+    # reported correctly instead of assuming contiguous rows from 0.
     response_points = [
         AnomalyPointModel(
-            row=p.index + row_offset,
+            row=row_numbers[p.index],
             value=p.value,
             score=p.score,
             is_outlier=p.is_outlier,
