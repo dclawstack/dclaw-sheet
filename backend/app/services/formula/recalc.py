@@ -131,6 +131,7 @@ async def _evaluate_targets(
     seed_grid: dict[tuple[int, int], object],
 ) -> list[Cell]:
     formula_set = set(formula_cells.keys())
+    target_set = set(targets)
     order = _topo_order(targets, forward)
     cyclic = set(targets) - set(order)
     for coord in cyclic:
@@ -140,10 +141,12 @@ async def _evaluate_targets(
     ctx = GridContext(values=dict(seed_grid))
     # Seed already-computed formula values so dependents see fresh results
     # when their direct dep is another formula cell already evaluated upstream.
+    # Only seed formula cells that are NOT current recalc targets; targets are
+    # re-evaluated below and their stale DB values must not be reused.
     for coord, c in formula_cells.items():
-        if coord not in formula_set:
+        if coord not in formula_set or coord in target_set:
             continue
-        if c.value and not c.value.startswith("#"):
+        if isinstance(c.value, str) and c.value and not c.value.startswith("#"):
             ctx.values.setdefault(coord, _coerce_cell(c.value, c.data_type))
 
     for coord in order:

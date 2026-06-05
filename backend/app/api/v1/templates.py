@@ -71,7 +71,6 @@ async def apply_template(
         created.append(sheet)
 
     await emit(
-        db,
         "template.applied",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

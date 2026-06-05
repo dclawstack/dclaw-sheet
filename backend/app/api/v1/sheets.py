@@ -1,3 +1,4 @@
+from urllib.parse import quote
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -55,7 +56,6 @@ async def create_sheet(
     )
     sheet = await repo.create(sheet)
     await emit(
-        db,
         "sheet.created",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -157,7 +157,6 @@ async def export_xlsx(
     sheet = await _resolve_sheet(sheet_id, scope, db)
     xlsx_bytes = await export_sheet_xlsx(db, sheet_id)
     await emit(
-        db,
         "sheet.exported",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,
@@ -166,10 +165,16 @@ async def export_xlsx(
         payload={"bytes": len(xlsx_bytes)},
     )
     safe_name = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in sheet.name) or "sheet"
+    encoded_name = quote(sheet.name.replace("\r", "").replace("\n", "")) or "sheet"
     return Response(
         content=xlsx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{safe_name}.xlsx"'},
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{safe_name}.xlsx"; '
+                f"filename*=UTF-8''{encoded_name}.xlsx"
+            )
+        },
     )
 
 
@@ -188,7 +193,6 @@ async def chart_recommendation(
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Invalid range: {exc}")
     await emit(
-        db,
         "chart.requested",
         workspace_id=scope.workspace.id,
         user_id=scope.user.email,

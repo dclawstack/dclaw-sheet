@@ -9,6 +9,7 @@ timestamp into a brand-new workbook, giving us "Git for spreadsheets".
 """
 from __future__ import annotations
 
+import contextvars
 from datetime import datetime
 from typing import Iterable
 from uuid import UUID
@@ -21,21 +22,28 @@ from app.repositories.sheet_repo import SheetRepository
 from app.repositories.workbook_repo import WorkbookRepository
 
 
-# Per-session context the cell repo can pull from (set by the auth dep).
-_CONTEXT: dict[int, dict] = {}
+# Request-scoped actor context the cell repo can pull from (set by the auth
+# dep). Using a ContextVar instead of a module-level dict keyed by id(db)
+# avoids two problems: id() values are reused after a session is GC'd (so a
+# pooled/reused DB session could inherit a previous user's actor_email and
+# attribute changes to the wrong user), and the dict never got cleared (a
+# slow memory leak). A ContextVar is naturally scoped to the current
+# request/task, so it cannot leak across pooled sessions.
+_ACTOR_EMAIL: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "history_actor_email", default=None
+)
 
 
 def set_actor(db: AsyncSession, email: str | None) -> None:
-    _CONTEXT[id(db)] = {"actor_email": email}
+    _ACTOR_EMAIL.set(email)
 
 
 def clear_actor(db: AsyncSession) -> None:
-    _CONTEXT.pop(id(db), None)
+    _ACTOR_EMAIL.set(None)
 
 
 def _actor(db: AsyncSession) -> str | None:
-    ctx = _CONTEXT.get(id(db))
-    return ctx.get("actor_email") if ctx else None
+    return _ACTOR_EMAIL.get()
 
 
 async def record_change(
