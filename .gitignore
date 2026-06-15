@@ -8,3 +8,15 @@
 # Environment
 .env
 .env.local
+.env*.local
+SETUP-KEYS.md
+
+# Node / Next.js
+node_modules/
+.next/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Drizzle
+drizzle/meta/_journal.json.bak
