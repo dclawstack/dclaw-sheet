@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "functions": {
+    "app/api/ai/copilot/route.ts": { "maxDuration": 60 },
+    "app/api/ai/sql/route.ts": { "maxDuration": 60 },
+    "app/api/connections/[id]/sync/route.ts": { "maxDuration": 60 }
+  }
+}

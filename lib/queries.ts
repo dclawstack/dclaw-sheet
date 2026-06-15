@@ -1,6 +1,6 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { cells, sheets, workbooks } from "@/db/schema";
+import { cells, connections, sheets, workbooks } from "@/db/schema";
 
 // ── Workbooks ────────────────────────────────────────────────────────────────
 export async function listWorkbooks(workspaceId: string) {
@@ -125,6 +125,52 @@ export async function bulkUpsertCells(sheetId: string, items: CellInput[]) {
       });
   }
   return { upserted: toUpsert.length, deleted: toDelete.length };
+}
+
+// ── Connections ──────────────────────────────────────────────────────────────
+export async function listConnections(workspaceId: string) {
+  return getDb()
+    .select({
+      id: connections.id,
+      name: connections.name,
+      kind: connections.kind,
+      status: connections.status,
+      lastError: connections.lastError,
+      lastSyncedAt: connections.lastSyncedAt,
+      createdAt: connections.createdAt,
+    })
+    .from(connections)
+    .where(eq(connections.workspaceId, workspaceId))
+    .orderBy(desc(connections.createdAt));
+}
+
+export async function createConnection(
+  workspaceId: string,
+  name: string,
+  kind: string,
+  configEncrypted: string
+) {
+  const [c] = await getDb()
+    .insert(connections)
+    .values({ workspaceId, name, kind, configEncrypted })
+    .returning();
+  return c;
+}
+
+export async function getConnection(workspaceId: string, id: string) {
+  const rows = await getDb()
+    .select()
+    .from(connections)
+    .where(and(eq(connections.id, id), eq(connections.workspaceId, workspaceId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function setConnectionStatus(
+  id: string,
+  patch: { status?: string; lastError?: string | null; lastSyncedAt?: Date }
+) {
+  await getDb().update(connections).set(patch).where(eq(connections.id, id));
 }
 
 export async function clearSheetCells(sheetId: string) {

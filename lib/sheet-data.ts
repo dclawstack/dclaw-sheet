@@ -49,6 +49,25 @@ export function buildRecords(cells: Cell[]): { headers: string[]; rows: Record<s
   return { headers, rows };
 }
 
+/** Convert connector records (headers + rows) into sheet cell inputs (header row + data). */
+export function recordsToCells(
+  headers: string[],
+  rows: Record<string, unknown>[]
+): { row: number; col: number; raw: string | null; value: string | null; dtype: string }[] {
+  const out: { row: number; col: number; raw: string | null; value: string | null; dtype: string }[] = [];
+  headers.forEach((h, col) => out.push({ row: 0, col, raw: h, value: h, dtype: "string" }));
+  rows.forEach((rec, i) => {
+    headers.forEach((h, col) => {
+      const v = rec[h];
+      if (v === null || v === undefined || v === "") return;
+      const s = typeof v === "boolean" ? (v ? "TRUE" : "FALSE") : String(v);
+      const dtype = typeof v === "number" ? "number" : typeof v === "boolean" ? "bool" : DATE_RE.test(s) ? "date" : "string";
+      out.push({ row: i + 1, col, raw: s, value: s, dtype });
+    });
+  });
+  return out;
+}
+
 export interface ColumnSchema {
   name: string;
   dtype: "number" | "temporal" | "bool" | "string";

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/client-api";
 import type { Workbook } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function WorkbooksPage() {
+  const router = useRouter();
   const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -47,6 +50,18 @@ export default function WorkbooksPage() {
     await load();
   }
 
+  async function loadDemo() {
+    setSeeding(true);
+    setError(null);
+    try {
+      const { workbookId } = await api.seedDemo();
+      router.push(`/app/${workbookId}`);
+    } catch (e: any) {
+      setError(e.message);
+      setSeeding(false);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
       <div className="mb-8 flex items-center justify-between">
@@ -68,6 +83,9 @@ export default function WorkbooksPage() {
         />
         <Button onClick={create} className="bg-brand text-brand-foreground hover:bg-brand/90">
           Create
+        </Button>
+        <Button variant="outline" onClick={loadDemo} disabled={seeding}>
+          {seeding ? "Loading…" : "Load Stripe demo"}
         </Button>
       </div>
 

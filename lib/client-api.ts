@@ -46,4 +46,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ sheetId, question }),
     }),
+
+  seedDemo: () => req<{ workbookId: string; sheetId: string; rows: number }>("/api/demo/seed", { method: "POST" }),
+  listConnections: () =>
+    req<{ id: string; name: string; kind: string; status: string; lastSyncedAt: string | null }[]>("/api/connections"),
+  createConnection: (name: string, config: Record<string, unknown>) =>
+    req<{ id: string }>("/api/connections", { method: "POST", body: JSON.stringify({ name, config }) }),
+  syncConnection: (id: string, workbookId?: string) =>
+    req<{ workbookId: string; sheetId: string; rows: number; drift: unknown }>(`/api/connections/${id}/sync`, {
+      method: "POST",
+      body: JSON.stringify({ workbookId }),
+    }),
 };

@@ -4,13 +4,15 @@ import { useState } from "react";
 import { SqlPanel } from "@/components/sql-panel";
 import { PivotPanel } from "@/components/pivot-panel";
 import { CopilotPanel } from "@/components/copilot-panel";
+import { ForecastPanel } from "@/components/forecast-panel";
 
-type Tab = "copilot" | "sql" | "pivot";
+type Tab = "copilot" | "sql" | "pivot" | "forecast";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "copilot", label: "✨ Copilot" },
   { id: "sql", label: "SQL" },
   { id: "pivot", label: "Pivot" },
+  { id: "forecast", label: "Forecast" },
 ];
 
 export function Panels({ sheetId, onMutated }: { sheetId: string; onMutated?: () => void }) {
@@ -35,6 +37,7 @@ export function Panels({ sheetId, onMutated }: { sheetId: string; onMutated?: ()
         {tab === "copilot" && <CopilotPanel key={`cop-${sheetId}`} sheetId={sheetId} onMutated={onMutated} />}
         {tab === "sql" && <SqlPanel key={`sql-${sheetId}`} sheetId={sheetId} />}
         {tab === "pivot" && <PivotPanel key={`pivot-${sheetId}`} sheetId={sheetId} />}
+        {tab === "forecast" && <ForecastPanel key={`fc-${sheetId}`} sheetId={sheetId} />}
       </div>
     </div>
   );
