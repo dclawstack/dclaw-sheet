@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/client-api";
 import type { Cell, Sheet } from "@/lib/types";
 import { Grid } from "@/components/grid";
+import { Panels } from "@/components/panels";
 import { Button } from "@/components/ui/button";
 
 export default function WorkbookPage({ params }: { params: { workbookId: string } }) {
@@ -13,12 +14,15 @@ export default function WorkbookPage({ params }: { params: { workbookId: string 
   const [cells, setCells] = useState<Cell[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPanels, setShowPanels] = useState(true);
+  const [gridVersion, setGridVersion] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const loadSheet = useCallback(async (sheetId: string) => {
     const { cells } = await api.getSheet(sheetId);
     setCells(cells);
     setActiveId(sheetId);
+    setGridVersion((v) => v + 1);
   }, []);
 
   useEffect(() => {
@@ -65,6 +69,9 @@ export default function WorkbookPage({ params }: { params: { workbookId: string 
           <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
             Import CSV
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowPanels((s) => !s)}>
+            {showPanels ? "Hide panels" : "SQL / Pivot"}
+          </Button>
         </div>
       </header>
 
@@ -88,8 +95,15 @@ export default function WorkbookPage({ params }: { params: { workbookId: string 
         ))}
       </div>
 
-      <div className="flex-1 overflow-hidden p-4">
-        {activeId && <Grid sheetId={activeId} initialCells={cells} />}
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto p-4">
+          {activeId && <Grid key={`${activeId}-${gridVersion}`} sheetId={activeId} initialCells={cells} />}
+        </div>
+        {showPanels && activeId && (
+          <aside className="w-[44%] min-w-[380px] border-l bg-muted/10">
+            <Panels sheetId={activeId} onMutated={() => loadSheet(activeId)} />
+          </aside>
+        )}
       </div>
     </main>
   );

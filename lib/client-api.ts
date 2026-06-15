@@ -1,6 +1,7 @@
 "use client";
 
 import type { Cell, CellPatch, Sheet, Workbook } from "./types";
+import type { CopilotResult } from "./ai/copilot";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -36,5 +37,13 @@ export const api = {
     req<{ rows: number; cols: number; cells: number }>(`/api/sheets/${sheetId}/import-csv`, {
       method: "POST",
       body: JSON.stringify({ csv, hasHeader }),
+    }),
+
+  copilot: (sheetId: string, question: string) =>
+    req<CopilotResult>("/api/ai/copilot", { method: "POST", body: JSON.stringify({ sheetId, question }) }),
+  generateSql: (sheetId: string, question: string) =>
+    req<{ sql: string; explanation: string; agreement: number | null }>("/api/ai/sql", {
+      method: "POST",
+      body: JSON.stringify({ sheetId, question }),
     }),
 };
