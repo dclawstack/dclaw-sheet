@@ -20,3 +20,6 @@ next-env.d.ts
 
 # Drizzle
 drizzle/meta/_journal.json.bak
+.vercel
+.migrate-token.local
+.env.production.local
