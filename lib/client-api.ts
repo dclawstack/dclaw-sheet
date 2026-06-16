@@ -38,6 +38,14 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ csv, hasHeader }),
     }),
+  importXlsx: async (sheetId: string, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/sheets/${sheetId}/import-xlsx`, { method: "POST", body: fd });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `Import failed (${res.status})`);
+    return res.json() as Promise<{ cells: number; source: string }>;
+  },
+  exportXlsxUrl: (sheetId: string) => `/api/sheets/${sheetId}/export-xlsx`,
 
   copilot: (sheetId: string, question: string) =>
     req<CopilotResult>("/api/ai/copilot", { method: "POST", body: JSON.stringify({ sheetId, question }) }),

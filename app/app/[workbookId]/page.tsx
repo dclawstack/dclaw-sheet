@@ -17,6 +17,7 @@ export default function WorkbookPage({ params }: { params: { workbookId: string 
   const [showPanels, setShowPanels] = useState(true);
   const [gridVersion, setGridVersion] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const xlsxRef = useRef<HTMLInputElement>(null);
 
   const loadSheet = useCallback(async (sheetId: string) => {
     const { cells } = await api.getSheet(sheetId);
@@ -53,6 +54,19 @@ export default function WorkbookPage({ params }: { params: { workbookId: string 
     }
   }
 
+  async function onImportXlsx(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !activeId) return;
+    try {
+      await api.importXlsx(activeId, file);
+      await loadSheet(activeId);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      if (xlsxRef.current) xlsxRef.current.value = "";
+    }
+  }
+
   if (loading) return <main className="p-12 text-muted-foreground">Loading…</main>;
 
   return (
@@ -66,8 +80,19 @@ export default function WorkbookPage({ params }: { params: { workbookId: string 
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileRef} type="file" accept=".csv" hidden onChange={onImport} />
+          <input ref={xlsxRef} type="file" accept=".xlsx" hidden onChange={onImportXlsx} />
           <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
             Import CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => xlsxRef.current?.click()}>
+            Import XLSX
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => activeId && (window.location.href = api.exportXlsxUrl(activeId))}
+          >
+            Export XLSX
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowPanels((s) => !s)}>
             {showPanels ? "Hide panels" : "SQL / Pivot"}
