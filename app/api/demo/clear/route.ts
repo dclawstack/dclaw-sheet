@@ -1,19 +1,17 @@
 // DEMO — see lib/demo/seed-data.ts header for removal steps.
 import { ok, requireDb } from "@/lib/api";
 import { currentPrincipal } from "@/lib/auth";
-import { seedDemoData } from "@/lib/demo/seed-data";
+import { clearAllData } from "@/lib/demo/seed-data";
 import { emit } from "@/lib/telemetry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 export async function POST() {
   const guard = requireDb();
   if (guard) return guard;
   const { workspaceId } = await currentPrincipal();
-  const summary = await seedDemoData(workspaceId);
-  emit("demo.seeded", { workspaceId, payload: { workbooks: summary.total } });
-  // keep backward-compatible fields (workbookId) for the /app button
-  return ok({ ...summary, workbookId: summary.primaryWorkbookId }, { status: 201 });
+  const result = await clearAllData(workspaceId);
+  emit("demo.cleared", { workspaceId, payload: result });
+  return ok(result);
 }

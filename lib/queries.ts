@@ -177,6 +177,28 @@ export async function clearSheetCells(sheetId: string) {
   await getDb().delete(cells).where(eq(cells.sheetId, sheetId));
 }
 
+// ── Demo helpers (used by the removable demo seed/clear) ─────────────────────
+export async function deleteAllWorkbooks(workspaceId: string) {
+  const res = await getDb()
+    .delete(workbooks)
+    .where(eq(workbooks.workspaceId, workspaceId))
+    .returning({ id: workbooks.id });
+  return res.length;
+}
+
+export async function deleteAllConnections(workspaceId: string) {
+  const res = await getDb()
+    .delete(connections)
+    .where(eq(connections.workspaceId, workspaceId))
+    .returning({ id: connections.id });
+  return res.length;
+}
+
+export async function firstSheetId(workspaceId: string, workbookId: string) {
+  const s = await listSheets(workspaceId, workbookId);
+  return s && s.length ? s[0].id : null;
+}
+
 export async function replaceSheetCells(sheetId: string, items: CellInput[]) {
   await clearSheetCells(sheetId);
   if (items.length === 0) return { inserted: 0 };

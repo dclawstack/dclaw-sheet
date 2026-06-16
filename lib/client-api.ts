@@ -94,7 +94,14 @@ export const api = {
       body: JSON.stringify({ sheetId, question }),
     }),
 
-  seedDemo: () => req<{ workbookId: string; sheetId: string; rows: number }>("/api/demo/seed", { method: "POST" }),
+  seedDemo: () =>
+    req<{
+      workbooks: { id: string; name: string; rows: number }[];
+      primaryWorkbookId: string | null;
+      workbookId: string | null;
+      total: number;
+    }>("/api/demo/seed", { method: "POST" }),
+  clearData: () => req<{ workbooks: number; connections: number }>("/api/demo/clear", { method: "POST" }),
   listConnections: () =>
     req<{ id: string; name: string; kind: string; status: string; lastSyncedAt: string | null }[]>("/api/connections"),
   createConnection: (name: string, config: Record<string, unknown>) =>

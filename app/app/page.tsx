@@ -55,7 +55,11 @@ export default function WorkbooksPage() {
     setError(null);
     try {
       const { workbookId } = await api.seedDemo();
-      router.push(`/app/${workbookId}`);
+      if (workbookId) router.push(`/app/${workbookId}`);
+      else {
+        await load();
+        setSeeding(false);
+      }
     } catch (e: any) {
       setError(e.message);
       setSeeding(false);
