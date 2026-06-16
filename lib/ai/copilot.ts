@@ -39,8 +39,10 @@ Typical question → [run_sql, make_chart]. Respond as strict JSON:
 export async function runCopilot(
   question: string,
   schema: SheetSchema,
-  workspaceId?: string
+  workspaceId?: string,
+  onProgress?: (message: string) => void
 ): Promise<CopilotResult> {
+  onProgress?.("Planning the answer…");
   const plan = await complete({
     taskType: "copilot",
     json: true,
@@ -62,6 +64,7 @@ export async function runCopilot(
     switch (tc.tool) {
       case "run_sql": {
         const intent = String(tc.intent ?? question);
+        onProgress?.("Writing SQL (multi-model consensus)…");
         const sql = await generateSql(intent, schema, workspaceId);
         cost += sql.costUsd;
         if (sql.ok) {

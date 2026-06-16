@@ -6,7 +6,7 @@ import { recommendChart, type ChartSpec } from "@/lib/charts";
 import { FormulaSheet } from "@/lib/formula";
 import { letterToCol } from "@/lib/cells";
 import { api } from "@/lib/client-api";
-import type { ToolCall } from "@/lib/ai/copilot";
+import type { ToolCall, CopilotResult } from "@/lib/ai/copilot";
 import { ChartView } from "@/components/chart-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,20 +26,31 @@ export function CopilotPanel({ sheetId, onMutated }: { sheetId: string; onMutate
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState("");
 
   async function ask() {
     const q = question.trim();
     if (!q || busy) return;
     setBusy(true);
     setQuestion("");
+    setStatus("");
     const turn: Turn = { question: q, message: "", toolCalls: [] };
     try {
-      const plan = await api.copilot(sheetId, q);
-      turn.message = plan.message;
-      turn.toolCalls = plan.toolCalls;
+      // Stream server progress (planning → consensus SQL), then execute the plan.
+      let plan: CopilotResult | null = null;
+      await api.copilotStream(sheetId, q, (e) => {
+        if (e.type === "status") setStatus(e.message);
+        else if (e.type === "plan") plan = e.plan;
+        else if (e.type === "error") throw new Error(e.error);
+      });
+      setStatus("");
+      if (!plan) throw new Error("No plan returned");
+      const planned: CopilotResult = plan; // pin to const: narrowing survives the awaits below
+      turn.message = planned.message;
+      turn.toolCalls = planned.toolCalls;
 
       // Execute the plan client-side.
-      const sqlCall = plan.toolCalls.find((t) => t.tool === "run_sql") as Extract<ToolCall, { tool: "run_sql" }> | undefined;
+      const sqlCall = planned.toolCalls.find((t) => t.tool === "run_sql") as Extract<ToolCall, { tool: "run_sql" }> | undefined;
       if (sqlCall) {
         turn.agreement = sqlCall.agreement;
         const handle = await loadDuckDBFromSheet(sheetId);
@@ -52,12 +63,12 @@ export function CopilotPanel({ sheetId, onMutated }: { sheetId: string; onMutate
         }
       }
 
-      const chartCall = plan.toolCalls.find((t) => t.tool === "make_chart") as Extract<ToolCall, { tool: "make_chart" }> | undefined;
+      const chartCall = planned.toolCalls.find((t) => t.tool === "make_chart") as Extract<ToolCall, { tool: "make_chart" }> | undefined;
       if (chartCall && turn.rows && turn.rows.length > 0) {
         turn.chart = recommendChart(turn.rows, { x: chartCall.x, y: chartCall.y, mark: chartCall.mark });
       }
 
-      const formulaCall = plan.toolCalls.find((t) => t.tool === "write_formula") as Extract<ToolCall, { tool: "write_formula" }> | undefined;
+      const formulaCall = planned.toolCalls.find((t) => t.tool === "write_formula") as Extract<ToolCall, { tool: "write_formula" }> | undefined;
       if (formulaCall) {
         await applyFormula(sheetId, formulaCall.cell, formulaCall.formula);
         onMutated?.();
@@ -65,6 +76,7 @@ export function CopilotPanel({ sheetId, onMutated }: { sheetId: string; onMutate
     } catch (e: any) {
       turn.error = String(e?.message ?? e);
     } finally {
+      setStatus("");
       setTurns((prev) => [...prev, turn]);
       setBusy(false);
     }
@@ -105,6 +117,12 @@ export function CopilotPanel({ sheetId, onMutated }: { sheetId: string; onMutate
         ))}
       </div>
 
+      {busy && status && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
+          {status}
+        </div>
+      )}
       <div className="flex gap-2 border-t pt-3">
         <Input
           placeholder="Ask your data…"
